@@ -1,0 +1,62 @@
+<%
+  /* ==========================================================================
+     首页每日壁纸（窄幅 banner）
+     --------------------------------------------------------------------------
+     数据由 scripts/banner.js 在构建期抓好，挂在 theme.banner_today 上：
+
+       image      图片直链（走上游 CDN，不落本地）
+       title      壁纸标题（show_title: false 时已被置空）
+       copyright  版权署名（show_copyright: false 时已被置空）
+       height     桌面高度，生成器已校验成「数字 + 单位」形状
+       link       点击去处；link: false 时为空串
+       overlay    是否压一层暗渐变
+
+     位置（top / after-intro）由 index.ejs 决定，本文件只管画一块。
+
+     几个刻意的选择
+     -------------
+     · <img> 用 loading="lazy" + decoding="async"：它在首屏，但不是 LCP
+       的主角（读者是来看文章的），解码不该跟正文抢主线程。
+     · 高度用 CSS 自定义属性 --banner-h 传进来，移动端在样式里覆写成
+       按宽高比自适应；写死 height 会把窄幅图在手机上拉变形。
+     · 内容层（标题/版权）绝对定位压在图上，不吃点击：图已经有自己的去处，
+       文字再叠一层链接只会让「点哪儿去哪」变成一道选择题。
+     · 图能拿到但浏览器加载失败属于另一层（接口成功 ≠ 图片可访问），交给
+       .banner__frame 的占位底色兜住，不会变成破图或大块空白。
+     ========================================================================== */
+  var banner = theme.banner_today || null;
+  if (banner) {
+    var hasText = !!(banner.title || banner.copyright);
+%>
+<figure class="banner" style="--banner-h:<%= banner.height %>">
+  <div class="banner__frame<%= banner.overlay ? ' has-overlay' : '' %>">
+
+    <%# 可点击时整张图包在 <a> 里；不可点击时就是一张纯图。
+        两种情况下标题与版权都要输出，所以内层结构完全一致。 %>
+    <% if (banner.link) { %>
+    <a class="banner__media" href="<%= banner.link %>" target="_blank" rel="noopener noreferrer"
+       aria-label="<%= banner.title || tr('banner.open') %>">
+      <img class="banner__img" src="<%= banner.image %>" alt="<%= banner.title || '' %>"
+           loading="lazy" decoding="async">
+    </a>
+    <% } else { %>
+    <span class="banner__media">
+      <img class="banner__img" src="<%= banner.image %>" alt="<%= banner.title || '' %>"
+           loading="lazy" decoding="async">
+    </span>
+    <% } %>
+
+    <% if (hasText) { %>
+    <figcaption class="banner__caption">
+      <% if (banner.title) { %>
+        <span class="banner__title"><%= banner.title %></span>
+      <% } %>
+      <% if (banner.copyright) { %>
+        <span class="banner__copy"><%= banner.copyright %></span>
+      <% } %>
+    </figcaption>
+    <% } %>
+
+  </div>
+</figure>
+<% } %>

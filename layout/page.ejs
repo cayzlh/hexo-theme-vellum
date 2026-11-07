@@ -18,86 +18,9 @@
   <% } %>
 <% } %>
 
-<% if (page.path && page.path.startsWith('curio/')) { %>
-<div class="ab-hero" id="ab-hero">
-  <div class="ab-hero-img-wrap">
-    <img id="ab-wallpaper" src="" alt="">
-  </div>
-  <div class="ab-hero-body">
-    <h2 id="ab-wp-title"></h2>
-    <p id="ab-wp-desc"></p>
-    <div class="ab-hero-actions">
-      <a class="ab-btn" id="ab-dl" download target="_blank" rel="noopener">⬇ <%= tr('common.download') %></a>
-      <button class="ab-btn" id="ab-copy">🔗 <%= tr('common.copy_link') %></button>
-    </div>
-  </div>
-</div>
-<% } %>
-
 <div class="post-body">
   <%- page.content %>
 </div>
-
-<% if (page.path && page.path.startsWith('curio/')) { %>
-<section class="ab-epic" id="ab-epic">
-  <h2 class="ab-epic-title"><%= tr('curio.epic_free_title') %></h2>
-  <div class="ab-epic-grid" id="epic-grid"><%= tr('common.loading') %></div>
-</section>
-
-<script>
-(function(d) {
-  /* 数据源地址与 /news/ 共用 daily.api_base（默认官方实例 60s.viki.moe）。 */
-  var API = '<%= ((theme.daily && theme.daily.api_base) || "https://60s.viki.moe").replace(/\/+$/, "") %>';
-
-  /* ---- Bing wallpaper ---- */
-  fetch(API + '/v2/bing').then(function(r) { return r.json(); }).then(function(res) {
-    if (!res || res.code !== 200 || !res.data) return;
-    var d2 = res.data;
-    var img = d.getElementById('ab-wallpaper');
-    var t   = d.getElementById('ab-wp-title');
-    var desc = d.getElementById('ab-wp-desc');
-    var dl  = d.getElementById('ab-dl');
-    if (img)  { img.src = d2.cover_4k || d2.cover; img.alt = d2.title || ''; }
-    if (t)    t.textContent = d2.title || '';
-    if (desc) desc.textContent = (d2.description || '').slice(0, 120);
-    if (dl)   dl.href = d2.cover_4k || d2.cover || '#';
-  }).catch(function() {});
-
-  /* ---- copy wallpaper link ---- */
-  var copyBtn = d.getElementById('ab-copy');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', function() {
-      var img = d.getElementById('ab-wallpaper');
-      if (!img || !img.src) return;
-      navigator.clipboard.writeText(img.src).then(function() {
-        copyBtn.textContent = '✓ ' + window.tr('common.copied');
-        setTimeout(function() { copyBtn.textContent = '🔗 ' + window.tr('common.copy_link'); }, 2000);
-      }).catch(function() {});
-    });
-  }
-
-  /* ---- Epic games ---- */
-  fetch(API + '/v2/epic').then(function(r) { return r.json(); }).then(function(res) {
-    if (!res || res.code !== 200 || !Array.isArray(res.data)) return;
-    var grid = d.getElementById('epic-grid');
-    if (!grid) return;
-    var html = '';
-    for (var i = 0; i < res.data.length; i++) {
-      var g = res.data[i];
-      var status = g.is_free_now ? window.tr('curio.epic_free_now') : window.tr('curio.epic_free_soon');
-      html += '<a class="ab-epic-card" href="' + g.link + '" target="_blank" rel="noopener">'
-        + '<div class="ab-epic-img-wrap"><img class="ab-epic-img" src="' + g.cover + '" alt="" loading="lazy"></div>'
-        + '<div class="ab-epic-info">'
-        + '<span class="ab-epic-name">' + g.title + '</span>'
-        + '<span class="ab-epic-price">' + status + ' · ' + window.tr('curio.epic_original_price', g.original_price_desc) + '</span>'
-        + '<span class="ab-epic-date">' + g.free_start + ' ~ ' + g.free_end + '</span>'
-        + '</div></a>';
-    }
-    grid.innerHTML = html;
-  }).catch(function() {});
-})(document);
-</script>
-<% } %>
 
 <% if (page.show_links) { %>
   <%- partial('_partial/friend_links') %>

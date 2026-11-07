@@ -123,16 +123,21 @@ daily:
   date_display: '%d月%d日'
   unit_ten_thousand: 万
 
-# ---- 拾遗页（curio） ----
-curio:
-  epic_free_title: 🎮 本周免费游戏
-  epic_free_now: 🎉 本周免费
-  epic_free_soon: 🕐 即将免费
-  epic_original_price: 原价 %s
+# ---- 首页每日壁纸 banner ----
+banner:
+  # aria-label：「点击图片会去哪」的读屏器描述（图上只显示标题与版权）
+  open: 查看今日壁纸
 
-# ---- 收藏站点 / 友链 ----
+# ---- 收藏站点（/links/）与文章页友链 ----
+# links.title 由两处共用：独立的收藏站点页（大标题 + <title>），
+# 以及文章页底部 show_links 的友链组件（小标题）。两处说的本来就是
+# 同一件事，拆成两个键只会让译者困惑该改哪个。
 links:
   title: 收藏站点
+  stats: '%d 个站 · %d 个分类'
+  uncategorized: 未分类
+  empty_title: 这里还没有收藏任何站点
+  empty_hint: 在 source/_data/bookmarks.yml 里加一条，或打开 bookmarks.remote 从 hub 拉取。
 
 # ---- 代码块 ----
 code:

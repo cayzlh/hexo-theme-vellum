@@ -40,7 +40,29 @@ for (var i = pool.length - 1; i > 0; i--) {
   var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
 }
 var randomPosts = randomCount > 0 ? pool.slice(0, randomCount) : [];
+
+/* ==========================================================================
+   每日壁纸 banner（窄幅）
+   --------------------------------------------------------------------------
+   数据由 scripts/banner.js 在构建期抓好、挂在 theme.banner_today 上，
+   这里只负责画。**不要改成前端 fetch**：首页是 4 小时一次的静态产物，
+   让每个访客各自请求一次接口，等于把一次构建的代价换成每个首屏的代价。
+
+   兜底是这个模块的第一需求：banner_today 为 null（接口挂了、图不可用、
+   缓存过期又抓失败）时**整块不渲染**。首页不能出现一块灰底或一张裂图——
+   这块内容本来就只是锦上添花，没有它首页依然完整。
+   ========================================================================== */
+var bannerCfg = theme.banner || {};
+var banner = theme.banner_today || null;
+/* 配置关掉时生成器根本不会填 banner_today，这里再判一次 enable：
+   站点把 banner.enable 改成 false 后，即使某次构建残留了旧数据也不显示。 */
+var showBanner = bannerCfg.enable !== false && !!banner;
+var bannerPos = (banner && banner.position) || 'top';
 %>
+
+<% if (showBanner && bannerPos === 'top') { %>
+<%- partial('_partial/banner') %>
+<% } %>
 
 <!-- Intro -->
 <div class="intro">
@@ -51,6 +73,10 @@ var randomPosts = randomCount > 0 ? pool.slice(0, randomCount) : [];
 </div>
 
 <hr class="<%= (theme.hr && theme.hr.home_style) ? 'style-' + theme.hr.home_style : 'home-hr' %>">
+
+<% if (showBanner && bannerPos === 'after-intro') { %>
+<%- partial('_partial/banner') %>
+<% } %>
 
 <!-- Recent Posts -->
 <h2 class="section-title"><%= tr_cfg(theme.recent_posts_title, 'home.recent_posts') %></h2>
