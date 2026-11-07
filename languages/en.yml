@@ -109,14 +109,16 @@ daily:
   # 英文没有「万」这个计数单位，置空 → fmtHot 改成输出完整数字+千分位
   unit_ten_thousand: ''
 
-curio:
-  epic_free_title: 🎮 Free this week
-  epic_free_now: 🎉 Free now
-  epic_free_soon: 🕐 Free soon
-  epic_original_price: 'was %s'
+# ---- Homepage daily wallpaper banner ----
+banner:
+  open: View today's wallpaper
 
 links:
   title: Bookmarks
+  stats: '%d sites · %d categories'
+  uncategorized: Uncategorized
+  empty_title: No bookmarks yet
+  empty_hint: Add an entry to source/_data/bookmarks.yml, or turn on bookmarks.remote to pull them from the hub.
 
 code:
   copy_code: Copy code

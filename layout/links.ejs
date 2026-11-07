@@ -1,0 +1,113 @@
+<%
+  /* ==========================================================================
+     收藏站点页（/links/）
+     --------------------------------------------------------------------------
+     结构（从上到下）：
+       1. 页头：eyebrow（数量统计）→ 标题 → 一句说明
+       2. 分组：分类作小标题，组内卡片网格
+       3. 空状态：没有可用站点时给一句能读的说明，不是一张白纸
+
+     为什么标题不做成大字号
+     ----------------------
+     /subscriptions/ 那边连标题都不画（导航已经标明位置，一句说明就够）。
+     这页不一样：它是「目的地」，读者点进来需要一个明确的落点，所以留标题；
+     但把字号压在 1.5rem 左右、并把「N 个站 · M 个分类」提到标题**之前**做成
+     mono 小字——先给规模感，再给名字，读起来像杂志的栏目页，而不是一张
+     「欢迎来到收藏夹」的落地页。三行各司其职：规模、名字、语气，谁也不抢谁。
+
+     为什么分组标题用 mono + 一条极淡的下划线
+     -------------------------------------
+     12 个站点分 4 组，读者是靠「组」来建立地图的，不是靠逐张卡片扫。分组标题
+     因此要有结构感（mono、字距、下划线延伸），但不能比卡片内容更响——用
+     --c-text-faint 而不是 --c-text，就是这个意思。与 /subscriptions/ 的日期
+     标题同源，两页看起来像一个主题出的。
+     ========================================================================== */
+  var groups = page.groups || [];
+  var total = page.total || 0;
+  var categoryCount = page.categoryCount || 0;
+  var intro = page.intro || '';
+
+  /* 「未分类」的显示文案由语言包给，纯函数只负责把它归到最后。 */
+  function groupName(category) {
+    return category || tr('links.uncategorized');
+  }
+%>
+
+<div class="links-page">
+
+  <%# ===== 1. 页头 ===== %>
+  <header class="links-head">
+    <% if (page.showCount) { %>
+      <%# 统计放在标题之前当 kicker：先给规模感，再给名字。
+          aria-hidden 是因为标题本身已经说明了这是什么页；读屏器里
+          多念一句「12 个站 · 4 个分类」反而打断节奏。 %>
+      <p class="links-head__kicker" aria-hidden="true"><%= tr('links.stats', total, categoryCount) %></p>
+    <% } %>
+    <h1 class="links-head__title"><%= page.title %></h1>
+    <% if (intro) { %>
+      <p class="links-head__intro"><%= intro %></p>
+    <% } %>
+  </header>
+
+  <%# ===== 2. 分组 ===== %>
+  <% if (groups.length === 0) { %>
+
+    <%# 空状态：把「为什么空」和「怎么填」都写出来。
+        只说「暂无内容」等于什么都没说——读者分不清是自己配错了还是主题没做。 %>
+    <div class="links-empty">
+      <p class="links-empty__title"><%= tr('links.empty_title') %></p>
+      <p class="links-empty__hint"><%= tr('links.empty_hint') %></p>
+    </div>
+
+  <% } else { %>
+
+    <% groups.forEach(function (group) { %>
+    <section class="links-group">
+      <h2 class="links-group__title">
+        <span class="links-group__name"><%= groupName(group.category) %></span>
+        <span class="links-group__count" aria-hidden="true"><%= group.items.length %></span>
+      </h2>
+
+      <div class="links-grid">
+        <% group.items.forEach(function (item) { %>
+        <%# 整张卡就是一个链接：可点面积最大化，键盘 Tab 也只需一步。
+            外链一律新窗口 + noopener noreferrer（noopener 防 window.opener
+            劫持，noreferrer 顺带掐掉 Referer 泄漏）。 %>
+        <a class="link-card"
+           href="<%= item.url %>"
+           target="_blank"
+           rel="noopener noreferrer">
+
+          <%# 首行是「图标 ←→ 外链符号」的两端对齐。
+              这一行不是为了塞符号，而是给卡片定一个上沿节奏：所有卡片的
+              图标都落在同一条水平线上，多列的网格才会读起来像「一版」，
+              而不是十二个各自为政的方块。 %>
+          <span class="link-card__top">
+            <% if (item.icon) { %>
+              <span class="link-card__icon" aria-hidden="true"><%= item.icon %></span>
+            <% } else { %>
+              <%# 没有 emoji 时给一个「字符底座」：域名首字母。
+                  为什么不退到 favicon：那是外站资源，站挂了就是一张裂图，
+                  而裂图比没有图标难看得多；也不依赖第三方 favicon 服务，
+                  开源主题不该把一个图片接口挂进默认渲染路径。 %>
+              <span class="link-card__icon link-card__icon--initial" aria-hidden="true"><%= item.initial %></span>
+            <% } %>
+            <%# 常驻的极淡外链符号：告诉读者「点了会离开本站」。
+                不做 hover 才浮现的动画——卡片已经有描边与位移两种反馈，
+                再加一个浮现的箭头就开始吵了。 %>
+            <span class="link-card__mark" aria-hidden="true">↗</span>
+          </span>
+
+          <span class="link-card__name"><%= item.name %></span>
+          <% if (item.description) { %>
+            <span class="link-card__desc"><%= item.description %></span>
+          <% } %>
+        </a>
+        <% }); %>
+      </div>
+    </section>
+    <% }); %>
+
+  <% } %>
+
+</div>

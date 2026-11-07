@@ -20,5 +20,8 @@ yarn-error.log*
 # 资讯页构建缓存（由 scripts/zaobao.js 写入站点根目录）
 .daily_cache.json
 
+# 首页每日壁纸缓存（由 scripts/banner.js 写入站点根目录，按天失效）
+.banner_cache.json
+
 # 本地调试产物
 *.bak

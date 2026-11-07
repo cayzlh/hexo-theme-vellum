@@ -64,6 +64,156 @@ html.dark .dark-toggle .icon-dark{display:inline}
 .intro-meta__sep{margin:0 0.55em;color:var(--c-border-strong)}
 .home-hr{border:none;height:1px;background:linear-gradient(to right,transparent,var(--c-hr),transparent);width:70%;margin:2.5em auto}
 
+/* ======================================================================
+   首页每日壁纸（窄幅 banner）
+   ----------------------------------------------------------------------
+   一块 200px 上下的窄幅图，位置在 intro 之前或之后（banner.position）。
+   设计底线是「不抢 attention」：它是开场的一个视觉锚点，不是英雄图，
+   所以不给满屏高度、不做视差、不加边框高亮，安静地待在那里。
+
+   高度走 CSS 自定义属性 --banner-h（模板按配置写进行内 style），
+   这样站点改 banner.height 时不必碰 CSS；下面的断点负责把它换成
+   按宽高比自适应，避免手机上 200px 硬高度把图压成一条。
+   ====================================================================== */
+.banner {
+  margin: 0 0 2em;
+}
+
+.banner__frame {
+  position: relative;
+  width: 100%;
+  /* 桌面端用配置的高度。走 CSS 自定义属性 --banner-h（模板按配置写进行内
+     style），这样站点改 banner.height 时不必碰 CSS；下面的断点负责把它换成
+     按宽高比自适应，避免手机上 200px 硬高度把图压成一条。 */
+  height: var(--banner-h, 200px);
+  /* 占位底色：图还在加载（或加载失败）时这里不是一块白洞。
+     用 --c-bg-tertiary 而不是透明，是因为透明会让下方内容透出来，
+     视觉上像一块「忘了删的空白」。 */
+  background: var(--c-bg-tertiary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  /* 修掉 Safari 里圆角 + overflow:hidden 时图片仍溢出到角外的问题 */
+  isolation: isolate;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.banner__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.banner__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 窄幅图的宽高比与源图差得远，cover 是唯一不换形的裁法；
+     object-position 取中间偏上，避免把地平线裁掉。 */
+  object-fit: cover;
+  object-position: center 45%;
+}
+
+/* 暗渐变层：白色标题要能压在**任何**一张图上。
+   从底部 65% 处开始加深，上方完全透明——图的主题（必应通常把主体放在
+   中上部）不会被压暗，只有压迫感最强的那条文字带变深。
+   单独一层而不是直接写 color/box-shadow，是为了让 overlay: false 时
+   整层消失、不留任何痕迹。 */
+.banner__frame.has-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.62) 0%,
+    rgba(0, 0, 0, 0.34) 30%,
+    rgba(0, 0, 0, 0) 62%
+  );
+  pointer-events: none;
+}
+
+/* 文字层：压在图的下沿，左对齐——和正文的左基线对齐，读起来是「这一页的
+   一句说明」，而不是一张卡片的居中标题。 */
+.banner__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 必须显式抬到渐变层之上。::after（暗渐变）在 DOM 里排在文字层**之后**，
+     而两者都是 position:absolute、都没有 z-index，于是按文档顺序绘制——
+     结果是这层 0.62 的黑罩盖在白字上，白字被压成一片脏灰，正是
+     「颜色明明写的 #ffffff 却看不出是白字」的原因。
+     这一行不是可选的样式点缀，是让文字可读的前提。 */
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  padding: 14px 16px;
+  /* 文字不吃点击，事件穿透到下面的 <a>：图有去处，文字只是说明。 */
+  pointer-events: none;
+}
+
+/* 图上的文字固定用白色系，不跟深浅色 token 走——它压的是一张照片，
+   照片的明暗与页面模式无关。这里保留裸色值是有意的例外：
+   token 描述的是「页面上的墨」，这里描述的是「照片上的墨」。 */
+.banner__title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  letter-spacing: 0.01em;
+}
+
+.banner__copy {
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.76);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  /* 版权行常常很长，限制在容器宽度内折行，不撑出圆角 */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+@media (max-width: 600px) {
+  .banner {
+    margin-bottom: 1.6em;
+  }
+
+  /* 手机上固定高度会让图变成一条窄缝：改成按宽高比自适应，
+     200px 在 680px 宽下的比例约 3.4:1，小屏按同一比例缩放。 */
+  .banner__frame {
+    height: auto;
+    aspect-ratio: 3 / 1;
+  }
+
+  .banner__caption {
+    padding: 10px 12px;
+  }
+
+  .banner__title {
+    font-size: 0.85rem;
+  }
+
+  /* 手机上版权行两行会盖住半张图，压成一行省略。 */
+  .banner__copy {
+    font-size: 0.66rem;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+}
+
+/* 关掉动效偏好时不做任何渐入（目前没有动画，这条是给以后的改动立的规矩：
+   往 .banner 上加 transition 之前先想想这条要不要一起守）。 */
+@media (prefers-reduced-motion: reduce) {
+  .banner__frame {
+    transition: none;
+  }
+}
+
+
 /* ========================================
    分割线体系 — HR Styles
    ======================================== */
@@ -2087,6 +2237,294 @@ html.dark .search-highlight {
   }
 }
 
+/* ======================================================================
+   收藏站点页（/links/）
+   ----------------------------------------------------------------------
+   页面骨架：页头（kicker → 标题 → 说明）→ 若干分组 → 组内卡片网格。
+   全部读 token，没有新增色值；深浅两套模式自动跟随。
+
+   与上面 friend-links 的关系：那块是「文章页底部的友链小挂件」，横排、
+   轻量、不抢正文；这里是独立页面，同样的数据要撑起一整屏，所以卡片改成
+   纵向排版（图标一行、名字一行、描述两行封顶）——纵向卡片在多列网格里
+   高度天然一致，扫视时视线只需要在一个方向移动。
+   ====================================================================== */
+.links-page {
+  padding: 4px 0 60px;
+}
+
+/* ---- 页头 ----
+   kicker（规模）→ 标题（名字）→ 说明（语气），三行三种字号，各司其职。
+   先把「有 12 个站、分 4 类」摆出来，读者一进来就知道这页值不值得看。 */
+.links-head {
+  margin-bottom: 2.6em;
+}
+
+.links-head__kicker {
+  margin: 0 0 0.6em;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.links-head__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--c-text);
+}
+
+.links-head__intro {
+  margin: 0.7em 0 0;
+  font-size: 0.86rem;
+  line-height: 1.75;
+  color: var(--c-text-light);
+}
+
+/* ---- 分组 ---- */
+.links-group {
+  margin-bottom: 2.4em;
+}
+
+.links-group:last-child {
+  margin-bottom: 0;
+}
+
+/* 分组标题：mono 小字 + 一条延伸到右端的极淡下划线。
+   下划线是关键——它把「这一组从这里开始」画成一条可见的边界，
+   没有它，四组卡片就只是四堆挨得比较近的方块。
+   /subscriptions/ 的日期标题用的是同一套画法，两页因此看起来同源。 */
+.links-group__title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  margin: 0 0 1em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--c-hr-weak);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--c-text-faint);
+}
+
+/* 下划线一直画到右端，所以最后一个元素之后要有一根撑开的空白 */
+.links-group__title::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+}
+
+.links-group__name {
+  flex: 0 0 auto;
+}
+
+/* 组内条数：极淡的角标，用来回答「这组有几条」，不参与标题的视觉重量 */
+.links-group__count {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text-faint);
+  opacity: 0.75;
+}
+
+/* ---- 卡片网格 ----
+   auto-fill + minmax(210px) 在 680px 的内容宽度（--mw 默认值）下正好落 3 列，
+   不到两列宽度时自动变 1 列——断点不用逐个写。
+   平板区间（601–1023px）单独钉成 2 列：这段内容宽度约 580–680px，auto-fill
+   会给到 3 列，每张卡只剩 ~190px，描述被挤成三四个字一行，反而不如两列。
+   断点取 1023px 是为了和主题其它地方的平板分界（侧栏 TOC 的隐藏点）一致。 */
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 601px) and (max-width: 1023px) {
+  .links-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---- 单张卡片 ----
+   反馈只做两件事：描边变青 + 整体上移 2px，再叠一层极淡投影把「浮起」
+   做实。三者都是缓慢、小幅的，读者的注意力落在卡片上而不是动画上。 */
+.link-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  padding: 14px 15px 15px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-card-bg);
+  color: var(--c-text);
+  text-decoration: none;
+  transition: transform var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+
+.link-card:hover,
+.link-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--c-accent-line);
+  box-shadow: 0 6px 18px var(--c-hr-weak);
+}
+
+.link-card:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+/* 首行：图标在左、外链标记在右，两端对齐。
+   它的作用不是装符号，而是把所有卡片的图标压在同一条水平线上——
+   多列网格里这一条线一旦对齐，整片区域就读起来像「一版」。 */
+.link-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  min-height: 24px;
+}
+
+.link-card__icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+/* 没有 emoji 时的字符底座：24×24 的浅色方块里放域名首字母。
+   用底块而不是裸字符，是因为裸字符在不同字体的字号下高度不一，
+   一排卡片看过去图标高低不齐；有底块就有确定的边界。 */
+.link-card__icon--initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--c-bg-tertiary);
+  color: var(--c-text-light);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.link-card__mark {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  line-height: 1;
+  color: var(--c-text-faint);
+  opacity: 0.55;
+  transition: color var(--dur-base) var(--ease-out),
+              opacity var(--dur-base) var(--ease-out);
+}
+
+.link-card:hover .link-card__mark {
+  color: var(--c-accent);
+  opacity: 1;
+}
+
+.link-card__name {
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--c-text);
+  /* 站名普遍不长，但真遇到超长也允许折行，不要用省略号把名字切掉——
+     名字是这张卡唯一的身份，切掉就认不出来了。 */
+  overflow-wrap: anywhere;
+}
+
+/* 描述固定占两行高度：卡片高度因此只由名字决定，一行名字的卡和两行名字
+   的卡不会在同一行网格里差出一截。超出两行截断加省略号。 */
+.link-card__desc {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--c-text-light);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 深色模式下投影会把卡片边缘糊成一圈脏灰——深底上改用描边承担「浮起」，
+   投影整个去掉。 */
+html.dark .link-card:hover,
+html.dark .link-card:focus-visible {
+  box-shadow: none;
+}
+
+/* ---- 空状态 ---- */
+.links-empty {
+  padding: 2.6em 0;
+  text-align: center;
+}
+
+.links-empty__title {
+  margin: 0 0 0.45em;
+  font-size: 0.9rem;
+  color: var(--c-text-muted);
+}
+
+.links-empty__hint {
+  margin: 0;
+  font-size: 0.79rem;
+  line-height: 1.8;
+  color: var(--c-text-faint);
+}
+
+/* ---- 窄屏 ---- */
+@media (max-width: 600px) {
+  .links-page {
+    padding: 0 0 40px;
+  }
+
+  .links-head {
+    margin-bottom: 2em;
+  }
+
+  .links-head__title {
+    font-size: 1.28rem;
+  }
+
+  .links-head__intro {
+    font-size: 0.83rem;
+  }
+
+  .links-group {
+    margin-bottom: 2em;
+  }
+}
+
+/* 480px 以下单列：两列时每张卡只剩 ~200px，描述会挤成两行各三四个字，
+   读起来比纵向长页面更累。 */
+@media (max-width: 480px) {
+  .links-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .link-card {
+    padding: 13px 14px 14px;
+  }
+}
+
+/* 关掉动效偏好下不做位移，只保留描边反馈——位移对前庭敏感人群是真不适，
+   而「有没有被指到」这件事靠颜色就够了。 */
+@media (prefers-reduced-motion: reduce) {
+  .link-card {
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+
+  .link-card:hover,
+  .link-card:focus-visible {
+    transform: none;
+  }
+}
+
 /* ===== Daily News Page ===== */
 /* ===== Daily News v2 — Vellum ===== */
 
@@ -2822,145 +3260,6 @@ html.dark .search-highlight {
     padding-left: 0;
   }
 }
-
-/* ===== About — Bing wallpaper ===== */
-.ab-hero {
-  margin: 0 0 2em;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--c-border);
-  background: var(--c-bg-secondary);
-}
-
-.ab-hero-img-wrap {
-  width: 100%;
-  max-height: 320px;
-  overflow: hidden;
-  background: var(--c-bg-tertiary);
-}
-
-.ab-hero-img-wrap img {
-  width: 100%;
-  height: 280px;
-  object-fit: cover;
-  display: block;
-}
-
-.ab-hero-body {
-  padding: 16px 20px;
-}
-
-.ab-hero-body h2 {
-  margin: 0 0 6px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.ab-hero-body p {
-  margin: 0 0 12px;
-  font-size: 0.85rem;
-  color: var(--c-text-light);
-  line-height: 1.5;
-}
-
-.ab-hero-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.ab-btn {
-  font-size: 0.78rem;
-  padding: 4px 12px;
-  border: 1px solid var(--c-border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--c-text-light);
-  cursor: pointer;
-  text-decoration: none;
-  transition: border-color 0.2s, color 0.2s;
-}
-
-.ab-btn:hover {
-  border-color: var(--c-text-light);
-  color: var(--c-text);
-}
-
-/* ===== About — Epic free games ===== */
-.ab-epic {
-  margin-top: 2em;
-}
-
-.ab-epic-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin: 0 0 0.8em;
-  letter-spacing: 0.02em;
-}
-
-.ab-epic-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.ab-epic-card {
-  display: flex;
-  gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--c-border);
-  text-decoration: none;
-  transition: opacity 0.2s;
-}
-
-.ab-epic-card:last-child {
-  border-bottom: none;
-}
-
-.ab-epic-card:hover {
-  opacity: 0.8;
-}
-
-.ab-epic-img-wrap {
-  flex-shrink: 0;
-  width: 100px;
-  height: 56px;
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--c-bg-tertiary);
-}
-
-.ab-epic-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.ab-epic-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.ab-epic-name {
-  font-size: var(--fs);
-  font-weight: 500;
-  color: var(--c-text);
-  line-height: var(--lh);
-}
-
-.ab-epic-price {
-  font-size: 0.78rem;
-  color: var(--c-text-light);
-}
-
-.ab-epic-date {
-  font-size: 0.75rem;
-  color: var(--c-text-light);
-}
-
-
 
 /* ===== Daily — Hacker News ===== */
 .dhn {

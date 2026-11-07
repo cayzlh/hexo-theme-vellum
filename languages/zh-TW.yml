@@ -109,14 +109,16 @@ daily:
   date_display: '%d月%d日'
   unit_ten_thousand: 萬
 
-curio:
-  epic_free_title: 🎮 本週免費遊戲
-  epic_free_now: 🎉 本週免費
-  epic_free_soon: 🕐 即將免費
-  epic_original_price: 原價 %s
+# ---- 首頁每日壁紙 banner ----
+banner:
+  open: 查看今日桌布
 
 links:
   title: 收藏網站
+  stats: '%d 個站 · %d 個分類'
+  uncategorized: 未分類
+  empty_title: 這裡還沒有收藏任何站點
+  empty_hint: 在 source/_data/bookmarks.yml 裡加一條，或打開 bookmarks.remote 從 hub 拉取。
 
 code:
   copy_code: 複製程式碼
