@@ -350,6 +350,15 @@ hexo.extend.generator.register('dossier_routes', function(locals) {
           project: projects[entry],
           content: indexSrc.content,
           frontMatter: indexFm,
+          /* front-matter 的 description 必须显式挂到路由数据上。
+             原来只落在 `frontMatter.description` 里，而 seo_description()
+             读的是 `page.description`——于是每个专题首页的 meta description
+             都退化成正文首段（线上出现过「简介 图片来源于网络，侵删。
+             SpringCloud学习记录。」这种把正文小标题抠进去的残句），
+             index.md 里精心写的那句 120+ 字介绍从未被搜索引擎看到。 */
+          description: indexFm.description || '',
+          keywords: indexFm.keywords,
+          seo_title: indexFm.seo_title,
           nav: projects[entry].nav,
           tags: tags,
           toc: null,
@@ -395,6 +404,11 @@ hexo.extend.generator.register('dossier_routes', function(locals) {
             content: doc.content,
             content_html: transformed,
             frontMatter: doc.frontMatter,
+            /* 同项目首页：章节自己写的 description 要能被 seo_description
+               读到，否则每章都退化成正文首段，几十个页面共用同一段开头。 */
+            description: doc.frontMatter.description || '',
+            keywords: doc.frontMatter.keywords,
+            seo_title: doc.frontMatter.seo_title,
             nav: projects[entry].nav,
             tags: tags,
             toc: tocData,

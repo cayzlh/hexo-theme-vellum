@@ -180,6 +180,14 @@ function buildPage(cfg, merged) {
       /* title 供 <title>/SEO 用；页面上是否再画一遍大标题由模板决定
          （现在不画——导航已经标明了位置，和 /subscriptions/ 的处理一致）。 */
       title: i18n.pick(cfg.page_title, 'links.title'),
+      /* description 必须显式给出：这一页不是 source 里的页面文件，
+         没有 front-matter，不给的话 SEO 会回落到站点那句 16 字的 tagline，
+         Bing 判「太短」。用实际条目数与分类数组成，才言之有物。
+         注意：pick() 只做「配置优先、语言包兜底」，**不转占位符**；
+         要带参数的句子必须走 tr()。 */
+      description: cfg.page_description
+        ? i18n.pick(cfg.page_description, 'links.page_description')
+        : i18n.tr('links.page_description', total, groups.length),
       intro: cfg.page_intro || '',
       groups: groups,
       total: total,

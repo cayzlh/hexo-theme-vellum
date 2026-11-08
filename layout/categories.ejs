@@ -1,0 +1,35 @@
+<%
+/* 分类总览页（/categories/）
+   ------------------------------------------------------------------
+   与 tags.ejs 同一个问题：source/categories/index.md 声明
+   `layout: "categories"`，主题里却没有这个模板，回落到 page.ejs 后
+   渲染出的是空内容——线上是一张白纸。
+
+   分类是有限集合（本站 6–7 个），所以不做云，直接列成带篇数的清单，
+   比一排大小不一的字号更好扫。
+   ------------------------------------------------------------------ */
+var cats = site.categories.toArray ? site.categories.toArray() : [];
+cats = cats.filter(function (c) { return c.length > 0; });
+cats.sort(function (a, b) { return b.length - a.length || a.name.localeCompare(b.name); });
+
+var total = cats.reduce(function (sum, c) { return sum + c.length; }, 0);
+%>
+
+<h1 class="page-heading"><%= tr('seo.categories_index') %></h1>
+
+<p class="taxonomy-intro"><%= tr('taxonomy.categories_intro', cats.length, total) %></p>
+
+<% if (cats.length === 0) { %>
+  <p class="taxonomy-empty"><%= tr('taxonomy.empty') %></p>
+<% } else { %>
+  <ul class="category-index">
+    <% cats.forEach(function (cat) { %>
+      <li class="category-index__item">
+        <a href="<%= url_for(cat.path) %>">
+          <span class="category-index__name"><%= cat.name %></span>
+          <span class="category-index__count"><%= cat.length %></span>
+        </a>
+      </li>
+    <% }); %>
+  </ul>
+<% } %>

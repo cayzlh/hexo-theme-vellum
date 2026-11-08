@@ -226,6 +226,24 @@ hexo.extend.generator.register('subscriptions', function () {
 
   function buildPage(customData) {
     var path = customData.path || 'subscriptions/index.html';
+    /* description 在这里补：这一页由生成器产出，没有 front-matter，
+       不补就会回落到站点那句 16 字 tagline（Bing 判「太短」），
+       而且 7 个翻页共用同一句。带页码 + 源数量才每页不同。 */
+    if (!customData.description) {
+      var active = customData.totalActive || 0;
+      var cur = customData.current || 1;
+      var tot = customData.total || 1;
+      /* 翻页的描述要带「这一页有什么」才算独有。只报页码仍然只有
+         51 个字符（Bing 判太短），所以把本页首条标题也带上。 */
+      var lead = '';
+      if (customData.items && customData.items.length) {
+        lead = customData.items.slice(0, 2).map(function (it) { return it.title || ''; })
+          .filter(function (t) { return t; }).join('、');
+      }
+      customData.description = cur > 1
+        ? i18n.tr('subscriptions.page_description_paged', active, cur, tot, lead)
+        : i18n.tr('subscriptions.page_description', active);
+    }
     return {
       path: path,
       layout: 'subscriptions',
@@ -256,7 +274,9 @@ hexo.extend.generator.register('subscriptions', function () {
 
       pages.push(buildPage({
         path: pagePath,
-        title: pageTitle,
+        /* 翻页把页码拼进 title。原来 7 个翻页的 <title> 全是
+           「订阅 · 站点名」，完全相同的标题让爬虫无法区分这些页面。 */
+        title: p > 1 ? pageTitle + i18n.tr('seo.title_separator') + i18n.tr('seo.page_number', p) : pageTitle,
         items: pageItems,
         isEmpty: false,
         totalActive: totalActive,

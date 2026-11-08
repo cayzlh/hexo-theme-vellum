@@ -71,6 +71,9 @@ archive:
 taxonomy:
   category: '分类：%s'
   tag: '标签：%s'
+  tags_intro: '全站共 %d 个标签，按文章数从多到少排列，字号大小对应篇数多少。'
+  categories_intro: '全站共 %d 个分类、%d 篇文章，按篇数从多到少排列。'
+  empty: '还没有任何内容。'
 
 # ---- 订阅页 ----
 subscriptions:
@@ -85,6 +88,8 @@ subscriptions:
   copy_feed_aria: 复制 %s 的订阅地址
   fetch_failed: 抓取失败
   page_title: 订阅
+  page_description_paged: '我订阅的 %d 个博客最近更新的文章，按时间倒序排列，在第 %d 页（共 %d 页）；本页从「%s」开始，每一条都直接链到原文，可以按发布时间往回翻。'
+  page_description: '这里按时间倒序汇总我订阅的 %d 个博客最近发布的文章，每一条都直接链到原文，读完想追更可以直接取用每个源给出的 RSS 地址；同一来源的多篇会按来源交错显示，不会让某一个博客占满整页。构建时抓取，随部署更新。'
 
 # ---- 档案（dossier） ----
 dossier:
@@ -102,6 +107,7 @@ dossier:
 # ---- 资讯页（daily） ----
 daily:
   page_title: 每日资讯
+  page_description: '构建时静态抓取的每日资讯汇总，%s 更新，共 %d 个栏目：每日早报、AI 资讯、历史上的今天、知乎与微博热搜、Hacker News，每条都直接链到原文；页面随构建刷新，不依赖前端实时请求。'
   weekend_in: 周末还有 %s 天
   luck: 🍀 运势 %s
   zaobao: 📰 每日早报
@@ -134,6 +140,7 @@ banner:
 # 同一件事，拆成两个键只会让译者困惑该改哪个。
 links:
   title: 收藏站点
+  page_description: '我常翻的几个站，以及几件顺手的工具，共 %d 个站点、分 %d 类；每张卡片都直链到对应站点，包括知识库、技术社区和自建服务的入口，全部按用途归类，方便一次找到该去的地方。收藏标准只有一条：我确实会反复打开它。'
   stats: '%d 个站 · %d 个分类'
   uncategorized: 未分类
   empty_title: 这里还没有收藏任何站点
@@ -154,17 +161,63 @@ not_found:
 
 # ---- SEO（<title> / meta description） ----
 seo:
+  # <title> 各段的连接符。前后各留一个半角空格，读起来是「文章名 · 站点名」。
+  title_separator: ' · '
   category_suffix: '%s 分类'
   tag_suffix: '%s 标签'
   archive: 归档
   archive_year: '%s 年'
   archive_year_month: '%s 年 %d 月'
+  # 列表页标题里的规模信息。Bing 报「标题太短」，而标签页原本只有
+  # 「WSL 标签 · CAYZLH」13 个字符——篇数本来就在页面上，放进标题不掺假。
+  posts_count: '%d 篇文章'
+  tag_total: '共 %d 个'
+  category_total: '共 %d 个'
+  tags_index: 文章标签
+  categories_index: 文章分类
+  page_number: '第 %d 页'
+  page_listing: 文章列表
+  # 档案（dossier）页面
+  dossier_suffix: 档案
+  dossier_index: 技术档案
+  dossier_tag_suffix: 档案专题
+  projects_count: '%d 个系列'
+  doc_count: '%d 篇文档'
   tag_desc: '%s 上关于「%s」的 %d 篇文章：%s%s。'
   category_desc: '%s 的「%s」分类下共 %d 篇文章：%s%s。'
   archive_desc: '%s 在 %s 发布的 %d 篇文章：%s%s。'
   archive_all_desc: '%s 的全部文章归档，按年份和月份整理，可快速翻阅往期内容。'
+  # 列表页描述偏短时追加的一句。必须对「这一页」成立，
+  # 不能是所有页面通用的空话——否则修完「太短」就成了「重复」。
+  tag_tail: 同一个标签下的文章会按时间倒序排列，方便连着读。
+  category_tail: 同一分类下的文章按时间倒序排列，适合顺着脉络往下读。
+  archive_tail: 每一篇都按发布月份归位，适合回看某个时间段写了什么。
+  archive_total_clause: '全站共 %d 篇文章。'
   dossier_base: '%s 的档案库'
-  dossier_desc_projects: '%s，收录 %d 个技术专题的系列笔记，按章节组织，适合系统性地读。'
+  dossier_desc_projects: '%s，收录 %d 个技术专题共 %d 篇系列笔记：%s 等，按章节组织，适合系统性地读。'
   dossier_desc_plain: '%s，按主题整理的系列技术笔记。'
+  dossier_tag_desc: '%s 的「%s」专题下共有 %d 个系列（%s），合计 %d 篇笔记，按章节组织，适合系统性地读。'
+  # 首页描述：站点名 / 站点简介 / 作者 / 最近文章标题
+  home_desc: '%s 是 %s 写的中文博客，作者 %s。持续记录后端开发、运维部署、Android 与前端实践，以及读书和日常随笔；最近更新有 %s 等。'
+  home_page_desc: '%s 这是文章列表的第 %d 页，往前翻可以继续看到更早的文章。'
+  home_page_listing: '%s 的文章列表第 %d 页，这一页上有 %s 等文章；按发布时间倒序排列，往前翻可以继续看到更早的内容。'
+  # 描述偏短时的补白片段（Bing 的「太短」阈值约 120 字符）
+  clause_dossier: '这个系列共收录 %d 篇笔记，按章节顺序编排。'
+  clause_category: '归在「%s」分类下。'
+  clause_separator: ' '
+  clause_years: '横跨 %d 个年份（%s 到 %s），其中 %s 年写得最多，共 %d 篇。'
+  clause_chapters: '包含%s 等章节。'
+  doc_unit: ' 篇'
+  clause_breakdown: '各专题的篇数分别是：%s。'
+  clause_opening: '正文从「%s」讲起。'
+  clause_sections: '本章依次讲了%s 这几节。'
+  tags_index_desc: '%s 的 %d 篇文章共被打上 %d 个标签，按篇数从多到少排列；写得最多的是%s 这几类（括号里是篇数）。点任一标签即可看到该主题下的全部文章。'
+  categories_index_desc: '%s 的文章按内容归入 %d 个分类，合计 %d 篇：%s。分类是比标签更粗的划分，适合按大方向翻阅；每个分类下的文章都按发布时间倒序排列，点进去就是一条完整的时间线。'
+  clause_topics: '专题方向包括%s。'
+  clause_tags: '涉及%s等技术标签。'
+  clause_position: '这是系列中的第 %d 篇（共 %d 篇）。'
+  project_doc_desc: '%s 的技术档案《%s》中的一章「%s」，按章节顺序整理的学习笔记。%s'
+  span_clause: '时间跨度从 %s 到 %s。'
+  topic_clause: '涉及%s等方向。'
   more_suffix: 等
   list_separator: '、'

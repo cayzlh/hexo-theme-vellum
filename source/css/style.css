@@ -390,6 +390,70 @@ hr.dash-dot::before,hr.style-dash-dot::before{
 .archive-date{font-size:.95rem;color:var(--c-text-light);font-variant-numeric:tabular-nums}
 .archive-title{font-size:var(--fs)}
 
+/* ---- 标签总览（/tags/）与分类总览（/categories/） ----
+   这两个页面长期是空白的（主题缺 tags.ejs / categories.ejs，
+   站点 source 里声明了对应 layout）。补上模板后顺手补样式。
+
+   为什么标签用字号分档、分类不用：
+     标签有 70 多个，一排同样大小的链接读起来像电话簿，字号差给出了「哪些
+     话题写得多」的直觉；分类只有 6 个，字号差异反而会让人觉得排版坏了，
+     所以分类走等宽清单，用篇数对齐来体现分量。 */
+.taxonomy-intro{
+  margin:-0.75em 0 2em;
+  color:var(--c-text-muted);
+  font-size:0.9rem;
+  line-height:1.7;
+}
+.taxonomy-empty{color:var(--c-text-muted)}
+
+.tag-cloud{
+  list-style:none;
+  padding:0;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:0.55em 1.15em;
+}
+.tag-cloud__item a{
+  color:var(--c-text);
+  text-decoration:none;
+  border-bottom:1px solid transparent;
+}
+.tag-cloud__item a:hover{
+  color:var(--c-link-hover);
+  border-bottom-color:var(--c-link);
+}
+/* 四档字号。倍数之间的差要肉眼可辨但不夸张——0.88 / 1 / 1.12 / 1.26 */
+.tag-cloud__item--t1 a{font-size:0.88rem}
+.tag-cloud__item--t2 a{font-size:1rem}
+.tag-cloud__item--t3 a{font-size:1.12rem}
+.tag-cloud__item--t4 a{font-size:1.26rem;font-weight:500}
+.tag-cloud__count{
+  margin-left:0.35em;
+  font-size:0.72em;
+  color:var(--c-text-muted);
+  font-variant-numeric:tabular-nums;
+}
+
+.category-index{list-style:none;padding:0}
+.category-index__item a{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:1em;
+  padding:0.7em 0;
+  border-bottom:1px solid var(--c-border);
+  color:var(--c-text);
+  text-decoration:none;
+}
+.category-index__item a:hover{color:var(--c-link-hover)}
+.category-index__name{font-size:var(--fs)}
+.category-index__count{
+  color:var(--c-text-muted);
+  font-size:0.85rem;
+  font-variant-numeric:tabular-nums;
+}
+
 /* 在 PC 端隐藏移动端悬浮球（mobile.css 在媒体查询里放开） */
 .dock {
   display: none;

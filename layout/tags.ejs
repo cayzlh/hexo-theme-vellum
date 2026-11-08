@@ -1,0 +1,44 @@
+<%
+/* 标签总览页（/tags/）
+   ------------------------------------------------------------------
+   ★ 这是一个**此前完全空白**的页面：source/tags/index.md 写的是
+     `layout: "tags"`，但主题里从来没有 tags.ejs。Hexo 的 page 生成器
+     在找不到目标布局时会回落到 ['page', 'post', 'index']，而 page.ejs
+     只渲染 `page.content`——那个 .md 是空的，于是线上 /tags/ 是一张
+     只有页头页脚的白纸，标题却是「文章标签 · CAYZLH」。
+     搜索引擎把这个「有标题没内容」的页面收进了索引。
+
+   这里按标签的文章数排序渲染成云，字号随篇数分档。
+   ------------------------------------------------------------------ */
+var tags = site.tags.toArray ? site.tags.toArray() : [];
+/* 篇数为 0 的标签不展示：点进去是空列表，对读者没有意义。 */
+tags = tags.filter(function (t) { return t.length > 0; });
+tags.sort(function (a, b) { return b.length - a.length || a.name.localeCompare(b.name); });
+
+var max = tags.length ? tags[0].length : 1;
+var min = tags.length ? tags[tags.length - 1].length : 1;
+/* 1..4 四档。linear 而不是 log：本站标签最多 12 篇，log 分档会全挤在同一级。 */
+function tier(len) {
+  if (max === min) return 2;
+  var r = (len - min) / (max - min);
+  return 1 + Math.round(r * 3);
+}
+%>
+
+<h1 class="page-heading"><%= tr('seo.tags_index') %></h1>
+
+<p class="taxonomy-intro"><%= tr('taxonomy.tags_intro', tags.length) %></p>
+
+<% if (tags.length === 0) { %>
+  <p class="taxonomy-empty"><%= tr('taxonomy.empty') %></p>
+<% } else { %>
+  <ul class="tag-cloud">
+    <% tags.forEach(function (tag) { %>
+      <li class="tag-cloud__item tag-cloud__item--t<%= tier(tag.length) %>">
+        <a href="<%= url_for(tag.path) %>">
+          <%= tag.name %><span class="tag-cloud__count"><%= tag.length %></span>
+        </a>
+      </li>
+    <% }); %>
+  </ul>
+<% } %>

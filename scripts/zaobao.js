@@ -268,11 +268,24 @@ function formatDateDisplay(dateStr) {
 /* ===== Page builder ===== */
 
 function formatPage(data, newsDate, updateTime) {
+  /* 栏目数量用实际抓到的数据算，不用写死的 8——
+     接口挂了几个的时候，摘要里说「8 个栏目」就是在撒谎。 */
+  var sections = 0;
+  if (data.zaobao && data.zaobao.news && data.zaobao.news.length) sections++;
+  if (data.aiNews && data.aiNews.news && data.aiNews.news.length) sections++;
+  if (data.todayInHistory && data.todayInHistory.items && data.todayInHistory.items.length) sections++;
+  if (data.zhihu && data.zhihu.news && data.zhihu.news.length) sections++;
+  if (data.weibo && data.weibo.news && data.weibo.news.length) sections++;
+  if (data.hackerNews && data.hackerNews.news && data.hackerNews.news.length) sections++;
+
   return {
     path: PAGE_PATH,
     layout: 'daily',
     data: {
       title: tr('daily.page_title'),
+      /* 这一页不是 source 里的文件，没有 front-matter。不给 description
+         就会回落到站点那句 16 字的 tagline，Bing 判「太短」。 */
+      description: tr('daily.page_description', newsDate || '', sections),
       newsDate: newsDate,
       updateTime: updateTime,
       daily: data.daily || {},
@@ -430,6 +443,7 @@ function emptyPage() {
     layout: 'daily',
     data: {
       title: tr('daily.page_title'),
+      description: tr('daily.page_description', '', 0),
       newsDate: '',
       updateTime: '',
       daily: {},

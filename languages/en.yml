@@ -59,6 +59,9 @@ archive:
 taxonomy:
   category: 'Category: %s'
   tag: 'Tag: %s'
+  tags_intro: '%d tags in total, ordered by post count; larger type means more posts.'
+  categories_intro: '%d categories and %d posts, ordered by post count.'
+  empty: 'Nothing here yet.'
 
 subscriptions:
   empty_title: Nothing fetched yet
@@ -72,6 +75,8 @@ subscriptions:
   copy_feed_aria: Copy the feed URL of %s
   fetch_failed: Fetch failed
   page_title: Subscriptions
+  page_description: 'A reverse-chronological digest of recent posts from the %d blogs I follow. Every entry links straight to the original article, entries from the same source are interleaved rather than stacked, and each source lists its RSS feed if you want to follow along. Fetched at build time and refreshed on deploy.'
+  page_description_paged: 'Recent posts from the %d blogs I follow, newest first, on page %d of %d. This page starts with "%s"; every entry links straight to the original article.'
 
 dossier:
   page_title: Dossier
@@ -87,6 +92,7 @@ dossier:
 
 daily:
   page_title: Daily News
+  page_description: 'A daily digest captured at build time and updated %s, with %d sections: morning briefing, AI news, today in history, Zhihu and Weibo trending, and Hacker News. Every item links to its source; the page is rebuilt with each deploy rather than fetched live.'
   weekend_in: '%s days to the weekend'
   luck: '🍀 Luck %s'
   zaobao: 📰 Daily Brief
@@ -115,6 +121,7 @@ banner:
 
 links:
   title: Bookmarks
+  page_description: 'The sites I keep coming back to and the tools I actually use — %d links across %d categories, covering knowledge bases, developer communities and my own services, all grouped by purpose so you can get where you need in one pass. The only admission rule: I really do open it again and again.'
   stats: '%d sites · %d categories'
   uncategorized: Uncategorized
   empty_title: No bookmarks yet
@@ -132,17 +139,56 @@ not_found:
   back_home: Go back home
 
 seo:
+  title_separator: ' · '
   category_suffix: '%s category'
   tag_suffix: '%s tag'
   archive: Archive
   archive_year: '%s'
   archive_year_month: '%s/%d'
+  posts_count: '%d posts'
+  tag_total: '%d total'
+  category_total: '%d total'
+  tags_index: Tags
+  categories_index: Categories
+  page_number: 'Page %d'
+  page_listing: post listing
+  dossier_suffix: Dossier
+  dossier_index: Technical dossier
+  dossier_tag_suffix: dossier topic
+  projects_count: '%d series'
+  doc_count: '%d notes'
   tag_desc: '%d posts about "%s" on %s: %s%s.'
   category_desc: '%d posts in the "%s" category on %s: %s%s.'
   archive_desc: '%d posts published on %s in %s: %s%s.'
   archive_all_desc: 'All posts on %s, organised by year and month.'
+  tag_tail: 'Posts under the same tag are listed newest first, so they read well as a series.'
+  category_tail: 'Posts in this category are listed newest first, following the thread of the topic.'
+  archive_tail: 'Every post is filed under the month it was published, so you can revisit a period in one pass.'
+  archive_total_clause: '%d posts in all.'
   dossier_base: "The dossier of %s"
-  dossier_desc_projects: '%s — %d technical series organised by chapter, meant to be read end to end.'
+  dossier_desc_projects: '%s — %d technical series, %d notes in all (%s and more), organised by chapter and meant to be read end to end.'
   dossier_desc_plain: '%s — technical notes organised by topic.'
+  dossier_tag_desc: 'The "%s" topic in the dossier of %s covers %d series (%s) and %d notes in all, organised by chapter.'
+  # 占位符顺序必须与 zh-CN 一致：站点名 / 站点简介 / 作者 / 最近文章标题
+  home_desc: '%s — %s Written by %s, it keeps notes on backend development, deployment, Android and frontend work; recent posts include %s.'
+  home_page_desc: '%s This is page %d of the post listing; earlier posts continue on the following pages.'
+  home_page_listing: '%s post listing, page %d — this page carries %s and more, newest first; earlier posts continue on the following pages.'
+  clause_dossier: 'The series holds %d notes, arranged in chapter order.'
+  clause_category: 'Filed under "%s".'
+  clause_separator: ' '
+  clause_years: 'The posts span %d years (%s to %s); %s was the busiest with %d posts.'
+  clause_chapters: 'Chapters include %s.'
+  doc_unit: ' notes'
+  clause_breakdown: 'Note counts by series: %s.'
+  clause_opening: 'It opens with "%s".'
+  clause_sections: 'The chapter walks through %s in order.'
+  tags_index_desc: '%s files its %d posts under %d tags, ordered by post count; the busiest are %s (count in brackets). Pick any tag to see every post under that topic.'
+  categories_index_desc: 'Posts on %s are filed into %d categories, %d posts in all: %s. Categories are the broader cut, good for browsing by direction; every category lists its posts newest first, so one click gives you the full timeline.'
+  clause_topics: 'The series covers %s.'
+  clause_tags: 'Tagged %s.'
+  clause_position: 'It is note %d of %d in the series.'
+  project_doc_desc: 'A chapter, "%s", from the %s dossier "%s", kept as reading notes in chapter order. %s'
+  span_clause: 'The posts run from %s to %s.'
+  topic_clause: 'Topics covered include %s.'
   more_suffix: ' and more'
   list_separator: ', '

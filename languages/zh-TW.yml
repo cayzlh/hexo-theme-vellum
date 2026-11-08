@@ -60,6 +60,9 @@ archive:
 taxonomy:
   category: '分類：%s'
   tag: '標籤：%s'
+  tags_intro: '全站共 %d 個標籤，按文章數從多到少排列，字號大小對應篇數多寡。'
+  categories_intro: '全站共 %d 個分類、%d 篇文章，按篇數從多到少排列。'
+  empty: '還沒有任何內容。'
 
 subscriptions:
   empty_title: 暫時沒有抓到更新
@@ -73,6 +76,8 @@ subscriptions:
   copy_feed_aria: 複製 %s 的訂閱位址
   fetch_failed: 抓取失敗
   page_title: 訂閱
+  page_description: '這裡按時間倒序彙整我訂閱的 %d 個部落格最近發布的文章，每一條都直接連到原文，想追更可以直接取用每個來源提供的 RSS 位址；同一來源的多篇會交錯顯示，不會讓某個部落格佔滿整頁。建置時抓取，隨部署更新。'
+  page_description_paged: '我訂閱的 %d 個部落格最近更新的文章，按時間倒序排列，在第 %d 頁（共 %d 頁）；本頁從「%s」開始，每一條都直接連到原文，可以按發布時間往回翻。'
 
 dossier:
   page_title: 檔案
@@ -88,6 +93,7 @@ dossier:
 
 daily:
   page_title: 每日資訊
+  page_description: '建置時靜態抓取的每日資訊彙整，%s 更新，共 %d 個欄目：每日早報、AI 資訊、歷史上的今天、知乎與微博熱搜、Hacker News，每條都直接連到原文；頁面隨建置刷新，不依賴前端即時請求。'
   weekend_in: 週末還有 %s 天
   luck: 🍀 運勢 %s
   zaobao: 📰 每日早報
@@ -115,6 +121,7 @@ banner:
 
 links:
   title: 收藏網站
+  page_description: '我常翻的幾個站，以及幾件順手的工具，共 %d 個站點、分 %d 類；每張卡片都直連到對應站點，包括知識庫、技術社群和自建服務的入口，全部按用途歸類，方便一次找到該去的地方。收藏標準只有一條：我確實會反覆打開它。'
   stats: '%d 個站 · %d 個分類'
   uncategorized: 未分類
   empty_title: 這裡還沒有收藏任何站點
@@ -132,17 +139,55 @@ not_found:
   back_home: 返回首頁
 
 seo:
+  title_separator: ' · '
   category_suffix: '%s 分類'
   tag_suffix: '%s 標籤'
   archive: 封存
   archive_year: '%s 年'
   archive_year_month: '%s 年 %d 月'
+  posts_count: '%d 篇文章'
+  tag_total: '共 %d 個'
+  category_total: '共 %d 個'
+  tags_index: 文章標籤
+  categories_index: 文章分類
+  page_number: '第 %d 頁'
+  page_listing: 文章列表
+  dossier_suffix: 檔案
+  dossier_index: 技術檔案
+  dossier_tag_suffix: 檔案專題
+  projects_count: '%d 個系列'
+  doc_count: '%d 篇文件'
   tag_desc: '%s 上關於「%s」的 %d 篇文章：%s%s。'
   category_desc: '%s 的「%s」分類下共 %d 篇文章：%s%s。'
   archive_desc: '%s 在 %s 發布的 %d 篇文章：%s%s。'
   archive_all_desc: '%s 的全部文章封存，按年份和月份整理，可快速翻閱往期內容。'
+  tag_tail: 同一個標籤下的文章會按時間倒序排列，方便連著讀。
+  category_tail: 同一分類下的文章按時間倒序排列，適合順著脈絡往下讀。
+  archive_tail: 每一篇都按發布月份歸位，適合回看某個時間段寫了什麼。
+  archive_total_clause: '全站共 %d 篇文章。'
   dossier_base: '%s 的檔案庫'
-  dossier_desc_projects: '%s，收錄 %d 個技術專題的系列筆記，按章節組織，適合系統性地讀。'
+  dossier_desc_projects: '%s，收錄 %d 個技術專題共 %d 篇系列筆記：%s 等，按章節組織，適合系統性地讀。'
   dossier_desc_plain: '%s，按主題整理的系列技術筆記。'
+  dossier_tag_desc: '%s 的「%s」專題下共有 %d 個系列（%s），合計 %d 篇筆記，按章節組織，適合系統性地讀。'
+  home_desc: '%s 是 %s 寫的中文部落格，作者 %s。持續記錄後端開發、維運部署、Android 與前端實作，以及閱讀和日常隨筆；最近更新有 %s 等。'
+  home_page_desc: '%s 這是文章列表的第 %d 頁，往前翻可以繼續看到更早的文章。'
+  home_page_listing: '%s 的文章列表第 %d 頁，這一頁上有 %s 等文章；按發布時間倒序排列，往前翻可以繼續看到更早的內容。'
+  clause_dossier: '這個系列共收錄 %d 篇筆記，按章節順序編排。'
+  clause_category: '歸在「%s」分類下。'
+  clause_separator: ' '
+  clause_years: '橫跨 %d 個年份（%s 到 %s），其中 %s 年寫得最多，共 %d 篇。'
+  clause_chapters: '包含%s 等章節。'
+  doc_unit: ' 篇'
+  clause_breakdown: '各專題的篇數分別是：%s。'
+  clause_opening: '正文從「%s」講起。'
+  clause_sections: '本章依次講了%s 這幾節。'
+  tags_index_desc: '%s 的 %d 篇文章共被打上 %d 個標籤，按篇數從多到少排列；寫得最多的是%s 這幾類（括號裡是篇數）。點任一標籤即可看到該主題下的全部文章。'
+  categories_index_desc: '%s 的文章按內容歸入 %d 個分類，合計 %d 篇：%s。分類是比標籤更粗的劃分，適合按大方向翻閱；每個分類下的文章都按發布時間倒序排列，點進去就是一條完整的時間線。'
+  clause_topics: '專題方向包括%s。'
+  clause_tags: '涉及%s等技術標籤。'
+  clause_position: '這是系列中的第 %d 篇（共 %d 篇）。'
+  project_doc_desc: '%s 的技術檔案《%s》中的一章「%s」，按章節順序整理的學習筆記。%s'
+  span_clause: '時間跨度從 %s 到 %s。'
+  topic_clause: '涉及%s等方向。'
   more_suffix: 等
   list_separator: '、'
