@@ -47,7 +47,7 @@ home:
   now: 'now <b>%s</b>'
 
 archive:
-  search_placeholder: Search post titles...
+  search_placeholder: Find a post…
   search_aria: Search posts
   count_all: '%d posts in total'
   count_found: '%d posts found'
@@ -55,7 +55,6 @@ archive:
   empty_hint: Try another keyword
   month_label: '%d'
   year_month_label: '%s·%d'
-  search_fulltext: Search full text →
   # ---- Archive jump nav / grouping (links the three archive levels) ----
   jump_nav: Archive navigation
   by_year: By year

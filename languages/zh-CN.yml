@@ -58,7 +58,7 @@ home:
 
 # ---- 归档页 ----
 archive:
-  search_placeholder: 搜索文章标题...
+  search_placeholder: 找文章…
   search_aria: 搜索文章
   count_all: 共 %d 篇文章
   count_found: 找到 %d 篇文章
@@ -66,7 +66,6 @@ archive:
   empty_hint: 试试其他关键词吧
   month_label: '%d月'
   year_month_label: '%s·%d月'
-  search_fulltext: 搜正文 →
   # ---- 归档导航条 / 分组（归档页三层互链） ----
   jump_nav: 归档导航
   by_year: 按年份

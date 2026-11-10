@@ -23,6 +23,24 @@
   var input = document.querySelector('.archive-search-input');
   if (!input) return;
 
+  /* =========================================================================
+     下划线波浪：聚焦态
+     =========================================================================
+     直线与波浪是同一个 <svg> 里的两条图元，靠 CSS 透明度切换。
+     用 JS 切 class 而不是 CSS 的 :focus-within —— 因为 src/style.css 里
+     .archive-search 下还有 <input> 的兄弟选择器可用，但 SVG 的 <line>/<path>
+     是 svg 的子节点，外层选择器跨不进 SVG 内部（:has() 同样匹配不到），
+     加密口令框（scripts/vault.js + vault/vault.css）也是同一个原因走 JS。
+
+     ★ 这段必须放在下面 `if (!items.length) return` 之前：输入框的视觉反馈
+     与「本页有没有条目可筛」无关，分页到空页时动效也得在。 */
+  var searchBox = input.closest('.archive-search');
+
+  if (searchBox) {
+    input.addEventListener('focus', function () { searchBox.classList.add('is-focused'); });
+    input.addEventListener('blur', function () { searchBox.classList.remove('is-focused'); });
+  }
+
   var timeline = document.querySelector('.archive-timeline');
   var list = document.querySelector('.archive-list');
   var countEl = document.querySelector('.archive-search-count');
@@ -192,8 +210,28 @@
   /* Esc 清空并复位：过滤后想回到全量视图，逐个删字符很烦。 */
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && input.value) {
+      e.preventDefault();
       input.value = '';
       performSearch('');
+      return;
+    }
+    /* 回车：升级到全站正文检索。
+       ------------------------------------------------------------------
+       这个框平时是「筛本页标题」的快捷方式，但它筛的范围只有当前归档页的
+       十几到几十条。读者搜一个词却没能找到时，下一步该去全站正文里找——
+       以前那是一个单独的「搜正文 →」链接，要读者自己意识到才点。
+       现在按回车就走，和浏览器的地址栏、各种站内搜索的心智一致。
+
+       不拦截空查询：没输入内容时回车什么也不该发生，而不是跳到一个
+       空的搜索页。 */
+    if (e.key === 'Enter') {
+      var q = input.value.trim();
+      if (!q) { e.preventDefault(); return; }
+      /* form 的 action 是 /search/、input 的 name 是 q —— 原生提交就够了，
+         浏览器会拼成 /search/?q=…。这里只在 search 关掉时阻止（没有落地页）。 */
+      var form = input.form || searchBox;
+      var fulltextOn = form && form.getAttribute('data-fulltext') !== 'false';
+      if (!fulltextOn) e.preventDefault();
     }
   });
 

@@ -48,7 +48,7 @@ home:
   now: 此刻 <b>%s</b>
 
 archive:
-  search_placeholder: 你在找什麼…?
+  search_placeholder: 找文章…
   search_aria: 搜尋文章
   count_all: 共 %d 篇文章
   count_found: 找到 %d 篇文章
@@ -56,7 +56,6 @@ archive:
   empty_hint: 換個關鍵字試試
   month_label: '%d月'
   year_month_label: '%s·%d月'
-  search_fulltext: 搜正文 →
   # ---- 歸檔導覽列 / 分組（歸檔頁三層互連） ----
   jump_nav: 歸檔導覽
   by_year: 按年份

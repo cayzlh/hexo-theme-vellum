@@ -2275,42 +2275,55 @@ html.dark .footer a:hover{color:var(--c-link)}
   .intro p{margin-bottom:.8em}
 }
 
-/* ===== Archive Search ===== */
+/* ===== Archive Search =====
+   --------------------------------------------------------------------------
+   一个输入框兼两件事：输入时实时筛本页标题，回车跳到 /search/ 搜全站正文。
+   下划线用 SVG 画（直线 + 波浪），聚焦时直线让位、波浪开始流动 ——
+   与文章加密口令框（vault）完全同一种语言，两处读起来是一套东西。
+
+   为什么下划线不用 border-bottom：
+   聚焦时它要变成一条流动的波浪，border 做不了位移。
+   line 与 path 在同一个 viewBox 里，靠透明度切换，所以切换时不会跳动。
+   ========================================================================== */
 .archive-search {
   position: relative;
   margin-bottom: 28px;
   width: 100%;
 }
 
+/* 图标垂直居中对齐「输入行」，不是整个 .archive-search（它下面还有 9px 的
+   下划线 SVG，算进去会让图标压低半个字）。输入行高度 = 上下 padding + 行高，
+   这里直接按那一行的中线定位。 */
 .archive-search-icon {
   position: absolute;
   left: 0;
-  top: 50%;
+  top: 22px;
   transform: translateY(-50%);
   color: var(--c-text-light);
   display: flex;
   align-items: center;
   pointer-events: none;
+  transition: color 0.2s;
+}
+
+/* 聚焦时图标跟着强调色走：整条输入行只有一个视觉焦点 */
+.archive-search.is-focused .archive-search-icon {
+  color: var(--c-accent);
 }
 
 .archive-search-input {
   width: 100%;
-  padding: 8px 0 8px 26px;
+  padding: 8px 0 9px 26px;
   font-size: 15px;
   font-family: inherit;
-  border: none;
-  border-bottom: 1px solid var(--c-border);
+  /* 下划线交给 SVG，这里不留 border */
+  border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--c-text);
-  transition: border-color 0.2s;
   outline: none;
   letter-spacing: 0.01em;
-}
-
-.archive-search-input:focus {
-  border-bottom-color: var(--c-accent);
-  border-bottom-width: 2px;
+  caret-color: var(--c-accent);
 }
 
 .archive-search-input::placeholder {
@@ -2319,38 +2332,73 @@ html.dark .footer a:hover{color:var(--c-link)}
   letter-spacing: 0;
 }
 
-/* 搜索计数 */
-/* 计数与「搜正文」入口同一行：左边是「共 N 篇」，右边是把人送向全文检索。
-   两者都是这次搜索的元信息，分两行会白占一屏高度。 */
-.archive-search-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px 16px;
-  margin-top: 8px;
-  margin-bottom: 20px;
+/* ---- 下划线（SVG）----
+   preserveAspectRatio="none" 让它随容器任意伸缩；
+   vector-effect="non-scaling-stroke" 保证线宽不被拉扁。 */
+.archive-search-under {
+  display: block;
+  width: 100%;
+  height: 9px;
+  margin-top: -2px;
+  overflow: visible;
+  pointer-events: none;
 }
 
+.archive-search-under-line,
+.archive-search-under-wave {
+  fill: none;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  transition: opacity 0.22s ease;
+}
+
+.archive-search-under-line {
+  stroke: var(--c-border-strong);
+}
+
+.archive-search-under-wave {
+  stroke: var(--c-accent);
+  opacity: 0;
+  /* SVG 子元素的 transform 默认以视口为参照，必须显式改成自身边界，
+     否则 translateY 会把它整条推出可视区。 */
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* 聚焦：直线让位，波浪开始流动。
+   用 JS 切 .is-focused 而不是纯 CSS —— <line>/<path> 在 <svg> 内部，
+   `.input:focus ~ .under .wave` 这类兄弟组合器跨不进 SVG，
+   :has() 从外层容器出发同样匹配不到（实测两者都无效）。 */
+.archive-search.is-focused .archive-search-under-line {
+  opacity: 0;
+}
+
+.archive-search.is-focused .archive-search-under-wave {
+  opacity: 1;
+  /* ease-in-out + 1.8s：接近自然的呼吸节奏；linear 会显得机械 */
+  animation: archive-search-wave 1.8s ease-in-out infinite;
+}
+
+/* 原地上下轻弹，不做左右位移。
+   用 translateY 而不是动 path 的 d：改 d 会让波形本身变形，看着像在被拉扯；
+   整条线一起微微浮动才像「呼吸」。幅度取 1.6px —— 再大就会和文字的基线打架。 */
+@keyframes archive-search-wave {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.6px); }
+}
+
+/* 减少动效偏好：保留强调色，但不流动 */
+@media (prefers-reduced-motion: reduce) {
+  .archive-search.is-focused .archive-search-under-wave {
+    animation: none;
+  }
+}
+
+/* 搜索计数 */
 .archive-search-count {
   font-size: 13px;
   color: var(--c-text-light);
-  margin: 0;
-}
-
-/* 「搜正文 →」这类跳转链接：故意做成小字弱色，它是补充入口不是主操作 */
-.archive-search-more {
-  font-size: 13px;
-  color: var(--c-text-light);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-}
-
-.archive-search-more:hover {
-  color: var(--c-accent);
-  border-bottom-color: var(--c-accent);
+  margin: -16px 0 20px;
 }
 
 /* 空状态 */

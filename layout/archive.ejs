@@ -45,7 +45,18 @@ for (var gi = 0; gi < sorted.length; gi++) {
 <div class="archive-timeline">
   <%# 搜索框 %>
   <% if (theme.archive && theme.archive.search_enable !== false) { %>
-    <div class="archive-search">
+    <%
+    /* 一个输入框，两件事：
+         输入        实时筛本页标题（纯 DOM，不加载任何数据）
+         回车 / 提交  跳到 /search/?q=… 搜全站正文
+       以前这里只能筛标题，另配一个「搜正文 →」的链接。那个链接把两件事
+       摊成了两个入口，读者要先意识到「这里搜不到就去那里」才行。
+       现在同一个动作（回车）就完成升级，说明放在 placeholder 里。
+       search 关掉时退化成纯标题筛选，回车什么也不做。 */
+    var fulltextOn = !theme.search || theme.search.enable !== false;
+    %>
+    <form class="archive-search" role="search" action="<%= url_for('/search/') %>" method="get"
+          data-fulltext="<%= fulltextOn ? 'true' : 'false' %>">
       <span class="archive-search-icon">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/>
@@ -55,31 +66,28 @@ for (var gi = 0; gi < sorted.length; gi++) {
       <input
         type="text"
         class="archive-search-input"
+        name="q"
         placeholder="<%= tr_cfg(theme.archive.search_placeholder, 'archive.search_placeholder') %>"
         aria-label="<%= tr('archive.search_aria') %>"
         autocomplete="off"
         data-debounce="<%= theme.archive.search_debounce || 200 %>"
         data-highlight="<%= theme.archive.highlight_match !== false ? 'true' : 'false' %>"
       >
-    </div>
-    <div class="archive-search-foot">
-      <% if (theme.archive.show_match_count !== false) { %>
-        <div class="archive-search-count"><%= tr('archive.count_all', page.posts.length) %></div>
-      <% } %>
       <%#
-        指向 /search/ 的入口。
-        ------------------------------------------------------------------
-        这个输入框只能筛本页的 79 条标题，读者很容易以为「全站就这些」。
-        给一条明确的「去搜正文」，两个搜索的分工才看得出来：
-        这里筛标题（快、不加载数据），那边搜正文（要拉索引）。
-        search.enable 关掉时不渲染，避免给出一个空转的链接。
+        下划线：直线 + 波浪两条 path 叠在同一个 viewBox 里，
+        靠透明度切换。聚焦时直线让位、波浪开始流动。
+        结构与文章加密口令框（vault）完全一致，两处的下划线读起来是同一种语言。
+        ★ <line>/<path> 在 <svg> 内部，外层 CSS 选择器跨不进去，
+          所以聚焦态由 search.js 给 .archive-search 切 .is-focused。
       %>
-      <% if (!theme.search || theme.search.enable !== false) { %>
-        <a class="archive-search-more" href="<%= url_for('/search/') %>">
-          <%= tr('archive.search_fulltext') %>
-        </a>
-      <% } %>
-    </div>
+      <svg class="archive-search-under" viewBox="0 0 200 9" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <line class="archive-search-under-line" x1="0" y1="4.5" x2="200" y2="4.5"/>
+        <path class="archive-search-under-wave" d="M0 4.5 q10 -2.2 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0"/>
+      </svg>
+    </form>
+    <% if (theme.archive.show_match_count !== false) { %>
+      <div class="archive-search-count"><%= tr('archive.count_all', page.posts.length) %></div>
+    <% } %>
   <% } %>
 
   <%#
