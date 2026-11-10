@@ -3,12 +3,43 @@
 <%
 // ============================================
 // 数据整理：构建连续时间线
-// 所有文章按时间倒序排列
+// 所有文章按时间倒序排列，并按「年-月」切组
 // ============================================
 var sorted = [];
 page.posts.each(function(post) {
   sorted.push(post);
 });
+
+/* 归档页有三种形态，靠 page 上的字段区分（由 hexo-generator-archive 提供）：
+     主归档   /archives/          page.year 和 page.month 都不存在
+     年页     /archives/2022/     page.year 存在，month 不存在
+     月页     /archives/2022/03/  两个都存在
+   以前模板不区分，三者的渲染和导航完全一样，等于三份孤儿页面。 */
+var curYear = page.year;
+var curMonth = page.month;
+var isYearPage = !!curYear && !curMonth;
+var isMonthPage = !!curYear && !!curMonth;
+
+/* 按 年-月 分组。分组只影响渲染结构（插入 <div class="archive-marker">
+   让时间线有视觉分段），不改变文章顺序——顺序是构建期定好的。 */
+var groups = [];
+var lastKey = null;
+for (var gi = 0; gi < sorted.length; gi++) {
+  var p = sorted[gi];
+  var key = p.date.format('YYYY-MM');
+  if (key !== lastKey) {
+    groups.push({
+      key: key,
+      year: p.date.format('YYYY'),
+      month: p.date.format('MM'),
+      /* 分组标题用语言包的「2022·3月」，和刻度尺上的标签同一套文案 */
+      label: tr('archive.year_month_label', p.date.format('YYYY'), parseInt(p.date.format('MM'), 10)),
+      items: []
+    });
+    lastKey = key;
+  }
+  groups[groups.length - 1].items.push(p);
+}
 %>
 
 <div class="archive-timeline">
@@ -31,27 +62,109 @@ page.posts.each(function(post) {
         data-highlight="<%= theme.archive.highlight_match !== false ? 'true' : 'false' %>"
       >
     </div>
-    <% if (theme.archive.show_match_count !== false) { %>
-      <div class="archive-search-count"><%= tr('archive.count_all', page.posts.length) %></div>
-    <% } %>
+    <div class="archive-search-foot">
+      <% if (theme.archive.show_match_count !== false) { %>
+        <div class="archive-search-count"><%= tr('archive.count_all', page.posts.length) %></div>
+      <% } %>
+      <%#
+        指向 /search/ 的入口。
+        ------------------------------------------------------------------
+        这个输入框只能筛本页的 79 条标题，读者很容易以为「全站就这些」。
+        给一条明确的「去搜正文」，两个搜索的分工才看得出来：
+        这里筛标题（快、不加载数据），那边搜正文（要拉索引）。
+        search.enable 关掉时不渲染，避免给出一个空转的链接。
+      %>
+      <% if (!theme.search || theme.search.enable !== false) { %>
+        <a class="archive-search-more" href="<%= url_for('/search/') %>">
+          <%= tr('archive.search_fulltext') %>
+        </a>
+      <% } %>
+    </div>
   <% } %>
+
+  <%#
+    年份 / 月份导航条
+    -------------------------------------------------------------------------
+    三个层级互相打通，47 个归档页从「孤儿」变成可导航结构：
+      主归档  列出全部年份
+      年页    列出该年 12 个月（只保留有文章的月份）
+      月页    列出同年的其它月份，当前月高亮
+    ======================================================================= %>
+  <%
+  var jumpItems = [];
+  var siteArchiveBase = '/' + (config.archive_dir || 'archives') + '/';
+
+  if (!curYear && !curMonth) {
+    /* 主归档：从分组里归纳出年份（去重、保持倒序） */
+    var seenYears = {};
+    groups.forEach(function (g) {
+      if (seenYears[g.year]) { seenYears[g.year].count += g.items.length; return; }
+      seenYears[g.year] = { label: g.year, url: siteArchiveBase + g.year + '/', count: g.items.length };
+      jumpItems.push(seenYears[g.year]);
+    });
+  } else if (isYearPage) {
+    groups.forEach(function (g) {
+      jumpItems.push({
+        label: tr('archive.month_label', parseInt(g.month, 10)),
+        url: siteArchiveBase + g.year + '/' + g.month + '/',
+        count: g.items.length
+      });
+    });
+  } else {
+    /* 月页：列出**同年所有有文章的月份**，当前月高亮。
+       数据源必须是全站文章而不是本页那批——月页只有一个月的内容，
+       从它自己推不出兄弟月份（之前想用「前后各一月」凑，但相邻月
+       未必真的有文章，点过去就是 404）。 */
+    var monthCount = {};
+    site.posts.forEach(function (post) {
+      if (post.date.format('YYYY') !== curYear) return;
+      var m = post.date.format('MM');
+      monthCount[m] = (monthCount[m] || 0) + 1;
+    });
+    Object.keys(monthCount).sort().forEach(function (m) {
+      jumpItems.push({
+        label: tr('archive.month_label', parseInt(m, 10)),
+        url: siteArchiveBase + curYear + '/' + m + '/',
+        count: monthCount[m],
+        active: m === curMonth
+      });
+    });
+  }
+  %>
+  <%- partial('_partial/archive_jump', {
+        items: jumpItems,
+        label: (!curYear && !curMonth) ? tr('archive.by_year')
+             : (isYearPage ? tr('archive.by_month', curYear) : tr('archive.year_months', curYear))
+      }) %>
 
   <%# 时间线主体 %>
   <div class="archive-timeline-body">
     <div class="archive-items">
-      <% for (var i = 0; i < sorted.length; i++) { %>
-        <% var post = sorted[i]; %>
+      <% groups.forEach(function (g) { %>
+        <%#
+          分组标题（archive-marker）
+          -------------------------------------------------------------------
+          搜索脚本里的 updateMarkers() 一直在找 .archive-marker，但模板从来
+          没渲染过它——那段代码是死的。这里补上，于是：
+            · 79 条平铺列表有了年份视觉分段，长页面不再一片糊
+            · 搜索过滤时，空了的分组标题会被 updateMarkers() 自动隐藏
+          id 用 year-month，正好给刻度尺的锚点跳转用。
+        %>
+        <div class="archive-marker" id="m-<%= g.key %>" data-date="<%= g.key %>">
+          <%= g.label %><span class="archive-marker__count"><%= g.items.length %></span>
+        </div>
+        <% g.items.forEach(function (post) { %>
         <div class="archive-item"
           data-date="<%= post.date.format('YYYY-MM') %>"
           data-title="<%= post.title %>"
           data-tags="<%= post.tags ? post.tags.map(function(t) { return t.name; }).join(',') : '' %>"
           data-categories="<%= post.categories ? post.categories.map(function(c) { return c.name; }).join(',') : '' %>"
-          data-content="<%= (post.excerpt || post.content.replace(/<[^>]*>/g, '')).substring(0, 200).replace(/"/g, '&quot;') %>"
         >
           <span class="archive-date"><%= post.date.format('YYYY-MM-DD') %></span>
           <a href="<%= url_for(post.path) %>" class="archive-title"><%= post.title %></a>
         </div>
-      <% } %>
+        <% }); %>
+      <% }); %>
     </div>
 
     <%# 右侧刻度尺容器（由 JS 动态构建） %>

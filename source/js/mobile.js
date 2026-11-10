@@ -172,6 +172,10 @@
     }
   }
 
+  /* 给 /js/toc.js 用的关闭回调。目录链接的跳转由它统一处理，
+     处理完再回头把面板收起来——两个脚本各管一件事，不互相调用内部函数。 */
+  window.__vellumCloseToc = function () { setTocOpen(false); };
+
   function initMobileToc() {
     var p = tocParts();
     if (!p.panel) return;
@@ -196,22 +200,9 @@
       });
     }
 
-    // 点击 TOC 链接后关闭面板，让跳转结果立刻可见。
-    // 平滑滚动在这里统一处理：正文页的侧栏 TOC 自己绑了一套（只认 .toc 里的
-    // 链接），dossier 页绑的是 #dossier-toc 里的；面板是第三处，且窄屏下
-    // 往往只有它可见，所以不依赖上面两套。
-    p.panel.querySelectorAll('.toc-link').forEach(function (link) {
-      link.addEventListener('click', function (e) {
-        var id = this.getAttribute('data-toc');
-        var target = id && document.getElementById(id);
-        if (target) {
-          e.preventDefault();
-          var top = target.getBoundingClientRect().top + window.pageYOffset - 80;
-          window.scrollTo({ top: top, behavior: 'smooth' });
-        }
-        setTocOpen(false);
-      });
-    });
+    /* 面板里的跳转不在这里绑定：定位与平滑滚动统一由 /js/toc.js 处理
+       （它给面板的 onNavigate 回调会调下面的 __vellumCloseToc）。
+       两处都绑会各自滚一次，而且两边的偏移常量一旦不同步就会互相抢。 */
 
     p.panel.addEventListener('click', function (e) { e.stopPropagation(); });
   }

@@ -66,6 +66,13 @@ archive:
   empty_hint: 试试其他关键词吧
   month_label: '%d月'
   year_month_label: '%s·%d月'
+  search_fulltext: 搜正文 →
+  # ---- 归档导航条 / 分组（归档页三层互链） ----
+  jump_nav: 归档导航
+  by_year: 按年份
+  by_month: '%s 年的月份'
+  year_months: '%s 年 · 月份'
+  back_to_year: 返回 %s 年
 
 # ---- 分类 / 标签 ----
 taxonomy:
@@ -221,3 +228,17 @@ seo:
   topic_clause: '涉及%s等方向。'
   more_suffix: 等
   list_separator: '、'
+
+# ---- 搜索页（/search/） ----
+search_page:
+  title: 搜索
+  description: 全站全文检索：在文章正文、档案章节里找关键词，结果按相关度排序并高亮命中片段。
+  intro: 在文章与档案的正文里查关键词。用空格分隔多个词，需要同时命中。
+  placeholder: 搜索文章正文...
+  clear: 清空
+  loading: 正在载入索引...
+  result_count: 找到 %d 条结果（共 %d 篇内容）
+  truncated: 仅显示前 %d 条，换个更具体的词试试。
+  empty_title: 没有找到相关内容
+  empty_hint: 换个说法，或减少关键词再试。
+  error: 索引载入失败，请刷新重试。

@@ -1,196 +1,54 @@
 <%
-function renderToc(items) {
-  var html = '';
-  for (var i = 0; i < items.length; i++) {
-    var item = items[i];
-    html += '<li class="toc-item toc-level-' + item.level + '">';
-    html += '<a href="#' + item.id + '" class="toc-link" data-toc="' + item.id + '">' + item.text + '</a>';
-    // Children nested inside the list item
-    if (item.children && item.children.length > 0) {
-      html += '<ul class="toc-list">';
-      html += renderToc(item.children);
-      html += '</ul>';
+  /* ==========================================================================
+     文章目录（桌面侧栏 + 移动端底部面板）
+     --------------------------------------------------------------------------
+     这个 partial 只做渲染，交互全在 /js/toc.js 里 —— 以前是内联 <script>，
+     153 个页面各背一份 4KB、无法缓存，档案页还复制了第二份（两份已经漂移
+     出行为差异）。现在两个页面共用同一个外部脚本，模板只输出 data- 配置。
+
+     三块输出里，.toc（桌面侧栏）和 .toc-panel（移动面板）保留；
+     原来的 .toc-mobile 内联折叠块已删除 —— 它只在 769~1023px 这段可见，
+     平板上已经有底部面板可用，两套并存反而多一份用不上的 DOM。
+     ========================================================================== */
+
+  function renderToc(items) {
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var hasChildren = !!(item.children && item.children.length > 0);
+      html += '<li class="toc-item toc-level-' + item.level
+        + (hasChildren ? ' has-children' : '') + '">';
+      html += '<a href="#' + item.id + '" class="toc-link" data-toc="' + item.id + '">'
+        + item.text + '</a>';
+      if (hasChildren) {
+        html += '<ul class="toc-list">' + renderToc(item.children) + '</ul>';
+      }
+      html += '</li>';
     }
-    html += '</li>';
+    return html;
   }
-  return html;
-}
+
+  var tocCfg = theme.toc || {};
+  var tocW = tocCfg.width || '';
+  var tocPos = tocCfg.position || 'right';
+  var tocHtml = renderToc(page.toc);
 %>
 
-<!-- Mobile TOC toggle -->
-<div class="toc-mobile<%= theme.toc.mobile_default === 'collapsed' ? ' toc-mobile-collapsed' : '' %>">
-  <button class="toc-toggle" onclick="this.parentElement.classList.toggle('toc-mobile-collapsed')">
-    📑 <%= tr('toc.title') %>
-  </button>
-  <div class="toc-mobile-body">
-    <div class="toc-wrapper">
-      <div class="toc-title"><%= tr('toc.title') %></div>
-      <ul class="toc-list"><%- renderToc(page.toc) %></ul>
-    </div>
-  </div>
-</div>
-
-<!-- Desktop TOC -->
-<%
-/* toc.width / toc.position 由模板投影成内联变量，供 style.css 的
-   --toc-w 覆盖使用。未配置时保持 CSS 里的 200px / 右侧。 */
-var tocW = (theme.toc && theme.toc.width) || '';
-var tocPos = (theme.toc && theme.toc.position) || 'right';
-%>
-<div class="toc<%= tocPos === 'left' ? ' toc-left' : '' %>"<% if (tocW) { %> style="--toc-w:<%= tocW %>"<% } %>>
+<!-- 桌面侧栏目录（≤1023px 隐藏，由底部面板接管） -->
+<div class="toc<%= tocPos === 'left' ? ' toc-left' : '' %>"<% if (tocW) { %> style="--toc-w:<%= tocW %>"<% } %>
+     data-toc-highlight="<%= tocCfg.highlight_on_scroll !== false %>"
+     data-toc-collapse="<%= tocCfg.auto_collapse !== false %>">
   <div class="toc-fixed">
-    <div class="toc-wrapper<%= (theme.toc.show_tree_line === false) ? ' toc-no-tree-line' : '' %>">
+    <div class="toc-wrapper<%= tocCfg.show_tree_line === false ? ' toc-no-tree-line' : '' %>">
       <div class="toc-title"><%= tr('toc.title') %></div>
-      <ul class="toc-list"><%- renderToc(page.toc) %></ul>
-      <% if (theme.toc.show_back_to_top !== false) { %>
+      <ul class="toc-list"><%- tocHtml %></ul>
+      <% if (tocCfg.show_back_to_top !== false) { %>
       <div class="toc-footer">
-        <button class="toc-back-top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false">
-          <span class="toc-back-icon">↑</span> <%= tr_cfg(theme.toc.back_to_top_text, 'common.back_to_top') %>
+        <button class="toc-back-top" type="button">
+          <span class="toc-back-icon">↑</span> <%= tr_cfg(tocCfg.back_to_top_text, 'common.back_to_top') %>
         </button>
       </div>
       <% } %>
     </div>
   </div>
 </div>
-
-
-<script>
-(function(){
-  var tocLinks = document.querySelectorAll('.toc .toc-link');
-  if (tocLinks.length === 0) return;
-
-  var highlightOnScroll = <%= theme.toc && theme.toc.highlight_on_scroll !== false ? 'true' : 'false' %>;
-  var autoCollapse = <%= theme.toc && theme.toc.auto_collapse !== false ? 'true' : 'false' %>;
-  if (!highlightOnScroll && !autoCollapse) {
-    // 两者均禁用：显示所有层级
-    var tocWrapper = document.querySelector('.toc .toc-wrapper');
-    if (tocWrapper) tocWrapper.classList.add('toc-auto-collapse-disabled');
-    return;
-  }
-
-  // Build heading positions
-  var headingPositions = [];
-  tocLinks.forEach(function(l) {
-    var id = l.getAttribute('data-toc');
-    var el = document.getElementById(id);
-    if (el) headingPositions.push({ el: el, link: l, id: id });
-  });
-  if (headingPositions.length === 0) return;
-
-  // Auto-collapse: disable if user turned it off (show all)
-  var tocWrapper = document.querySelector('.toc .toc-wrapper');
-  if (tocWrapper && !autoCollapse) {
-    tocWrapper.classList.add('toc-auto-collapse-disabled');
-  }
-
-  function getParentH2(item) {
-    var el = item;
-    while (el && !el.classList.contains('toc-level-2')) el = el.parentElement;
-    return el;
-  }
-
-  // ===== 位置追踪 — 始终高亮"距离视口顶部最近的标题" =====
-  function getActiveHeading() {
-    if (headingPositions.length === 0) return null;
-    var headerOffset = 80;
-    var best = null;
-    var bestDist = Infinity;
-    for (var i = 0; i < headingPositions.length; i++) {
-      var top = headingPositions[i].el.getBoundingClientRect().top;
-      var dist = Math.abs(top - headerOffset);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = headingPositions[i];
-      }
-    }
-    return best;
-  }
-
-  var currentSection = null;
-  var activeHeading = null;
-
-  function updateHighlight() {
-    var heading = getActiveHeading();
-    if (!heading) return;
-    if (heading.link.classList.contains('active')) return;
-
-    // 移除所有高亮
-    document.querySelectorAll('.toc .toc-link.active').forEach(function(l) {
-      l.classList.remove('active');
-    });
-
-    // 高亮新标题
-    heading.link.classList.add('active');
-
-    // TOC 容器滚动到高亮标题可见
-    heading.link.scrollIntoView({ block: 'nearest' });
-
-    // 自动折叠展开
-    if (autoCollapse) {
-      var h2Parent = getParentH2(heading.link);
-      if (h2Parent && h2Parent !== currentSection) {
-        if (currentSection) currentSection.classList.remove('expanded');
-        h2Parent.classList.add('expanded');
-        currentSection = h2Parent;
-      }
-    }
-  }
-
-  // IntersectionObserver 触发位置重算（多阈值，确保及时响应）
-  var observer = new IntersectionObserver(function() {
-    updateHighlight();
-  }, { threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] });
-
-  tocLinks.forEach(function(l) {
-    var id = l.getAttribute('data-toc');
-    var el = document.getElementById(id);
-    if (el) observer.observe(el);
-  });
-
-  // 滚动事件监听（requestAnimationFrame 节流）
-  var ticking = false;
-  window.addEventListener('scroll', function() {
-    if (!ticking) {
-      window.requestAnimationFrame(function() {
-        updateHighlight();
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
-
-  // 初始状态：折叠所有，展开第一个 h2
-  if (autoCollapse) {
-    var h2s = document.querySelectorAll('.toc .toc-level-2');
-    if (h2s.length > 0) {
-      h2s.forEach(function(h2) { h2.classList.remove('expanded'); });
-      h2s[0].classList.add('expanded');
-      currentSection = h2s[0];
-    } else {
-      // 无 h2（仅 h3+）时跳过折叠，显示所有层级
-      var wrapper = document.querySelector('.toc .toc-wrapper');
-      if (wrapper) wrapper.classList.add('toc-auto-collapse-disabled');
-    }
-  }
-
-  // 初始高亮（下一帧执行，确保 DOM 布局完成）
-  requestAnimationFrame(function() {
-    updateHighlight();
-  });
-
-  // 平滑滚动跳转 + 关闭移动端面板（始终生效）
-  tocLinks.forEach(function(l) {
-    l.addEventListener('click', function(e) {
-      e.preventDefault();
-      var id = this.getAttribute('data-toc');
-      var el = document.getElementById(id);
-      if (el) {
-        var top = el.getBoundingClientRect().top + window.pageYOffset - 80;
-        window.scrollTo({ top: top, behavior: 'smooth' });
-      }
-      var mobile = document.querySelector('.toc-mobile');
-      if (mobile) mobile.classList.add('toc-mobile-collapsed');
-    });
-  });
-})();
-</script>

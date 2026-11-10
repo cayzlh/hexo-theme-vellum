@@ -470,6 +470,108 @@ hr.dash-dot::before,hr.style-dash-dot::before{
   padding: 0 0 40px;
 }
 
+/* ===== 年份 / 月份导航条 =====
+   --------------------------------------------------------------------------
+   归档有 47 个页面（主归档 + 年页 + 月页），此前彼此零链接，全靠 sitemap 进站。
+   这条导航把三层连起来：主归档 → 年 → 月。
+   视觉上刻意做得轻（mono 小字、无边框、无背景），它是「路标」不是「按钮区」，
+   不该跟下面的文章列表抢注意力。 */
+.archive-jump {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 20px;
+  font-size: 0.8rem;
+}
+
+.archive-jump__label {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.archive-jump__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.archive-jump__link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--c-text-light);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.archive-jump__link:hover {
+  color: var(--c-accent);
+  border-bottom-color: var(--c-accent);
+}
+
+/* 当前所在的月/年：加深 + 一条实线，不用背景块（会和列表条目抢视线） */
+.archive-jump__link.is-active {
+  color: var(--c-text);
+  font-weight: 600;
+  border-bottom-color: var(--c-text-faint);
+}
+
+.archive-jump__count {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark .archive-jump__link:hover { color: var(--c-link); }
+html.dark .archive-jump__link.is-active { color: var(--c-text); }
+
+/* ===== 分组标题（.archive-marker） =====
+   搜索脚本的 updateMarkers() 一直在找这个类，但模板以前从不渲染它。
+   现在由 archive.ejs 按月插入，长列表有了视觉分段；过滤时空掉的分组
+   会被自动隐藏。 */
+.archive-marker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 26px 0 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--c-text-faint);
+  /* 吸顶会让它压在正文上，但归档页没有固定头，贴到 80px 反而悬空。
+     这里不吸顶，只是个分组标签。 */
+}
+
+.archive-marker:first-child {
+  margin-top: 4px;
+}
+
+/* 标题右侧拉一条细线到边，让分组读起来像「分节」而不是「一条列表项」 */
+.archive-marker::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--c-border);
+}
+
+.archive-marker__count {
+  order: 2;
+  font-size: 0.68rem;
+  color: var(--c-text-faint);
+  opacity: 0.7;
+}
+
 /* ===== 时间线容器 ===== */
 .archive-items {
   position: relative;
@@ -558,15 +660,37 @@ html.dark .timeline-ruler::before {
   background: var(--c-border);
 }
 
-/* 每个刻度——短线 + 文字标签（若隐若现） */
+/* 每个刻度——短线 + 文字标签（若隐若现）
+   ★ 它是 <button>（JS 里创建的），不是 <div>：以前 cursor:default 且没有
+   任何点击处理，看起来像导航实际只是装饰。用 button 之后键盘也能 Tab 到、
+   回车就能跳转，不需要额外补 role / tabindex / keydown。 */
 .ruler-tick {
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   height: 1px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
   pointer-events: auto;
-  cursor: default;
+  cursor: pointer;
+  /* 视觉上只有 1px 高，但点击热区要够：用透明边框把盒子撑到 ~16px，
+     既好点又不至于让相邻刻度互相抢（一半落在边界之外，pseudo 仍定位在
+     中线，所以视觉位置不变）。 */
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  box-sizing: content-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 键盘聚焦时才给焦点框——鼠标点击不需要一圈多余的光晕 */
+.ruler-tick:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* 刻度短线 */
@@ -864,6 +988,20 @@ html.dark .post-title{color:#F5F5F5}
    标题样式 — 左侧竖线装饰
    流行设计：H2/H3 用左侧竖线快速识别
    ======================================== */
+
+/* 标题的滚动落点补偿。
+   固定头高约 4rem + 呼吸空间；目录跳转会 JS 算偏移，但**原生锚点**
+   （地址栏带 #id 直接打开、页内 <a href="#x">、Ctrl+F 浏览器跳转）
+   没经过 JS，没这行就会让标题被页头顶掉半截。
+   写在 h1~h6 上而不是逐个标题，避免以后加层级时漏掉。 */
+.post-body h1,
+.post-body h2,
+.post-body h3,
+.post-body h4,
+.post-body h5,
+.post-body h6 {
+  scroll-margin-top: 5rem;
+}
 
 /* H1 — 文章内大章节（极少使用） */
 .post-body h1 {
@@ -1648,44 +1786,58 @@ html.dark .toc-back-top:hover { color: var(--c-link); }
   font-size: 0.9rem;
 }
 
-/* ===== TOC 子标题折叠（auto_collapse） ===== */
-.toc-level-3,
-.toc-level-4,
-.toc-level-5,
-.toc-level-6 {
+/* ===== TOC 子标题折叠（auto_collapse） =====
+   --------------------------------------------------------------------------
+   ★ 降级原则：默认**全部可见**，折叠是 JS 加上 .toc-collapsible 之后的增强。
+
+   之前的写法是反的——.toc-level-3~6 全局 display:none，靠 JS 给当前章节
+   加 .expanded 才显示。后果：
+     · 移动端底部面板根本没人给它加 .expanded（那是桌面侧栏那套 JS 的事），
+       于是面板里 53% 的条目、16 个页面整块空白；
+     · JS 加载失败 / 被拦截 / 语法报错时，任何页面都只剩 h2，正文标题全没了。
+
+   现在只认两个类：
+     .toc-collapsible   折叠已被 JS 接管（只有它存在时层级才可能被藏）
+     .toc-item.expanded 该章节展开
+   两个都不存在 = 全都露着。这是任何情况下都不会「目录变空」的形态。 */
+
+/* 只有在 JS 声明接管折叠后，深层级才允许被收起 */
+.toc-collapsible .toc-level-3,
+.toc-collapsible .toc-level-4,
+.toc-collapsible .toc-level-5,
+.toc-collapsible .toc-level-6 {
   display: none;
 }
 
-.toc-list .toc-list .toc-level-3,
-.toc-list .toc-list .toc-level-4,
-.toc-list .toc-list .toc-level-5,
-.toc-list .toc-list .toc-level-6 {
-  display: none;
-}
-
-/* 展开状态 */
-.toc-item.expanded > .toc-level-3,
-.toc-item.expanded > .toc-level-4,
-.toc-item.expanded > .toc-level-5,
-.toc-item.expanded > .toc-level-6,
-.toc-item.expanded > .toc-list .toc-level-3,
-.toc-item.expanded > .toc-list .toc-level-4,
-.toc-item.expanded > .toc-list .toc-level-5,
-.toc-item.expanded > .toc-list .toc-level-6 {
+/* 展开：该节点自身的子层级放出来（直接子项 + 嵌在 ul 里的都算） */
+.toc-collapsible .toc-item.expanded > .toc-level-3,
+.toc-collapsible .toc-item.expanded > .toc-level-4,
+.toc-collapsible .toc-item.expanded > .toc-level-5,
+.toc-collapsible .toc-item.expanded > .toc-level-6,
+.toc-collapsible .toc-item.expanded > .toc-list .toc-level-3,
+.toc-collapsible .toc-item.expanded > .toc-list .toc-level-4,
+.toc-collapsible .toc-item.expanded > .toc-list .toc-level-5,
+.toc-collapsible .toc-item.expanded > .toc-list .toc-level-6 {
   display: block;
 }
 
-/* h2 展开状态的微提示 */
-.toc-level-2.expanded > .toc-link::after {
+/* 可折叠章节给一个展开指示（纯装饰，不影响可点区域） */
+.toc-collapsible .toc-item.has-children > .toc-link::after {
   content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 5px;
+  vertical-align: middle;
+  border-left: 4px solid currentColor;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  opacity: 0.45;
+  transition: transform 0.15s;
 }
 
-/* 禁用折叠时始终显示 */
-.toc-auto-collapse-disabled .toc-level-3,
-.toc-auto-collapse-disabled .toc-level-4,
-.toc-auto-collapse-disabled .toc-level-5,
-.toc-auto-collapse-disabled .toc-level-6 {
-  display: block !important;
+.toc-collapsible .toc-item.has-children.expanded > .toc-link::after {
+  transform: rotate(90deg);
 }
 
 /* ===== TOC 空状态 ===== */
@@ -1696,18 +1848,20 @@ html.dark .toc-back-top:hover { color: var(--c-link); }
   font-style: italic;
 }
 
-/* ===== Mobile TOC ===== */
-.toc-mobile{display:none;margin-bottom:1em}
-/* 底部面板（仅移动端可见，由 mobile.css 控制显示） */
+/* ===== 窄屏 / 平板：侧栏目录让位给底部面板 =====
+   --------------------------------------------------------------------------
+   断点从 1023px 收到 768px，是为了补齐一段「三不管」区间：
+     ≥1024px  桌面侧栏 TOC 可见
+     769~1023px 以前 .toc 已隐藏、而悬浮球要 ≤768px 才出现 —— 目录入口整个断档
+     ≤768px   底部面板 + 悬浮球
+   现在 769~1023px 也用底部面板，「有没有目录」全站只有两种状态，
+   不再有一整条宽度找不到目录。
+
+   .toc-mobile（页面内折叠块）已随这次改动删除，见 layout/_partial/toc.ejs 的注释。 */
 .toc-panel-overlay,
 .toc-panel{display:none}
 @media(max-width:1023px){
   .toc{display:none}
-  .toc-mobile{display:block}
-  .toc-toggle{font-size:.9rem;color:var(--c-text-light);cursor:pointer;padding:.3em 0;border:none;background:none;font-family:inherit}
-  .toc-toggle:hover{color:var(--c-accent)}
-  .toc-mobile-collapsed .toc-mobile-body{display:none}
-  .toc-item .toc-list{display:block} /* Always show on mobile */
 }
 
 /* ==========================================
@@ -2166,11 +2320,37 @@ html.dark .footer a:hover{color:var(--c-link)}
 }
 
 /* 搜索计数 */
+/* 计数与「搜正文」入口同一行：左边是「共 N 篇」，右边是把人送向全文检索。
+   两者都是这次搜索的元信息，分两行会白占一屏高度。 */
+.archive-search-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 8px;
+  margin-bottom: 20px;
+}
+
 .archive-search-count {
   font-size: 13px;
   color: var(--c-text-light);
-  margin-top: 8px;
-  margin-bottom: 20px;
+  margin: 0;
+}
+
+/* 「搜正文 →」这类跳转链接：故意做成小字弱色，它是补充入口不是主操作 */
+.archive-search-more {
+  font-size: 13px;
+  color: var(--c-text-light);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.archive-search-more:hover {
+  color: var(--c-accent);
+  border-bottom-color: var(--c-accent);
 }
 
 /* 空状态 */
@@ -3360,6 +3540,205 @@ html.dark .link-card:focus-visible {
 }
 
 /* ==========================================================================
+   搜索页（/search/）
+   ==========================================================================
+   页面骨架很简单：一个输入框 + 一个结果列表。刻意不做「热门标签」「最近
+   搜索」这类附加块——一个搜索页的第一屏应该只有一个问题：「你要找什么」，
+   而不是一堆让别人替你决定的东西。
+   ========================================================================== */
+
+.search-page {
+  max-width: var(--mw);
+  margin: 0 auto;
+}
+
+.search-head {
+  margin-bottom: 24px;
+}
+
+.search-intro {
+  margin: 8px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--c-text-light);
+}
+
+/* ===== 输入框 =====
+   整条做成一个带边框的胶囊而不是裸 input：
+   它承担了这一页唯一的主操作，需要一点视觉重量。 */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  height: 48px;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  background: var(--c-bg);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-box:focus-within {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+
+.search-box__icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--c-text-faint);
+}
+
+.search-box:focus-within .search-box__icon {
+  color: var(--c-accent);
+}
+
+.search-box__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--c-text);
+}
+
+.search-box__input::placeholder {
+  color: var(--c-text-faint);
+}
+
+/* Chrome 给 type=search 塞了一个原生清除按钮，和自定义的那个重叠 */
+.search-box__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-box__clear {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--c-text-light);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.search-box__clear:hover {
+  background: var(--c-hover-bg);
+  color: var(--c-text);
+}
+
+/* ===== 状态行 ===== */
+.search-status {
+  min-height: 1.4em;
+  margin: 14px 0 0;
+  font-size: 0.8rem;
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 结果列表 ===== */
+.search-results {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+}
+
+.search-result {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.search-result:last-child {
+  border-bottom: 0;
+}
+
+.search-result__title {
+  display: inline-block;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--c-text);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.search-result__title:hover {
+  color: var(--c-accent);
+  border-bottom-color: var(--c-accent);
+}
+
+.search-result__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.search-result__snippet {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--c-text-light);
+}
+
+/* 命中片段高亮。用底色而不是加粗：正文里一堆加粗会和标题抢层级，
+   淡底色只说「这个词在这里」，不改变阅读节奏。 */
+.search-result mark {
+  padding: 1px 2px;
+  border-radius: 2px;
+  background: var(--c-accent-soft);
+  color: var(--c-text);
+  font-weight: 500;
+}
+
+html.dark .search-result mark {
+  background: color-mix(in srgb, var(--c-accent) 26%, transparent);
+  color: var(--c-text);
+}
+
+/* ===== 空状态 ===== */
+.search-empty {
+  margin: 48px 0;
+  text-align: center;
+}
+
+.search-empty__title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--c-text-light);
+}
+
+.search-empty__hint {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--c-text-faint);
+}
+
+@media (max-width: 600px) {
+  .search-box {
+    height: 44px;
+  }
+  .search-result {
+    padding: 14px 0;
+  }
+}
+
+/* ==========================================================================
    打印样式（@media print）
    --------------------------------------------------------------------------
    打印走的是 paged media，纸张可打印宽度只有大约 703px（A4 210mm 减两侧页边距），
@@ -3374,7 +3753,13 @@ html.dark .link-card:focus-visible {
   .nav-overlay,
   .toc-panel,
   .toc-panel-overlay,
-  .dark-toggle-wrapper {
+  .dark-toggle-wrapper,
+  /* 侧栏目录也进纸面就是噪音：它是 position:fixed，打印时会飘在每页
+     边缘同一处，还可能压住正文。目录的作用是「在屏幕上跳转」，
+     纸质稿翻页靠页码，不需要它。 */
+  .toc,
+  .toc-fixed,
+  .dossier-toc {
     display: none !important;
   }
 

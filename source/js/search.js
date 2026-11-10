@@ -1,152 +1,201 @@
 /**
- * Vellum — Archive search
- * Real-time filtering of archive articles.
- * Supports continuous timeline (.archive-item) and list (.archive-list li) modes.
+ * Vellum — 归档页实时过滤
+ * ===========================================================================
+ * 支持两种容器（两种都存在，按页面上实际有什么来定）：
+ *   .archive-item  连续时间线（本主题的 /archives/ 及其年/月页）
+ *   .archive-list li  旧式列表（分类页、标签页）
+ *
+ * 匹配范围只有 标题 + 标签 + 分类。
+ * ---------------------------------------------------------------------------
+ * 以前每个条目还塞了一个 data-content（正文前 200 字），全站归档页为此多背
+ * 51 KB 标记，而收益很小：200 字的片段极易误命中（搜「配置」几乎命中每一篇），
+ * 而且它让「搜索」看起来能查正文、实际上查的只是一小截开头。
+ * 正文检索交给独立的 /search/ 页（构建期生成全文索引），这里只管归档页的
+ * 快速筛标题。
+ *
+ * 多关键词：空格分隔，全部命中才算（AND）。
+ * 以前是整串 indexOf，搜「spring boot」匹配不到「SpringBoot」，搜
+ * 「docker 镜像」也匹配不到任何东西——两个词都被当成一个连续的字符串。
  */
-(function() {
+(function () {
   'use strict';
 
-  // === DOM refs ===
   var input = document.querySelector('.archive-search-input');
+  if (!input) return;
+
   var timeline = document.querySelector('.archive-timeline');
   var list = document.querySelector('.archive-list');
   var countEl = document.querySelector('.archive-search-count');
   var emptyEl = document.querySelector('.archive-empty');
 
-  if (!input) return;
-
-  // === Detect mode ===
   var isTimeline = !!timeline;
   var items = isTimeline
     ? timeline.querySelectorAll('.archive-item')
     : (list ? list.querySelectorAll('li') : []);
-
   if (!items.length) return;
 
-  // === Config ===
   var debounceDelay = parseInt(input.getAttribute('data-debounce'), 10) || 200;
   var highlightEnabled = input.getAttribute('data-highlight') !== 'false';
-
-  // === State ===
   var totalCount = items.length;
 
-  // === Utilities ===
+  /* =========================================================================
+     工具
+     ========================================================================= */
 
-  function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  function highlightText(el, query) {
+  /* 归一化：小写 + 把常见全角标点折成半角 + 去掉分隔符。
+     中文读者输入「，"、顿号、斜杠都是常态，不归一化就等于不匹配。 */
+  function normalize(str) {
+    return String(str || '')
+      .toLowerCase()
+      .replace(/[\u3000\s]+/g, ' ')
+      .replace(/[，、；：（）【】「」《》]/g, ' ')
+      .trim();
+  }
+
+  /** 把查询拆成关键词组。每个词内部再拆「连续串」和「中文二元组」两种形态。 */
+  function parseQuery(raw) {
+    var q = normalize(raw);
+    if (!q) return [];
+    return q.split(' ').filter(Boolean);
+  }
+
+  /**
+   * 单个关键词是否命中文本。
+   * 纯 ASCII 词直接子串匹配（web 开发 里的 docker）；
+   * 含中文时同时试「整词子串」，因为中文没有词边界，二元组反而会漏。
+   */
+  function keywordHit(haystack, kw) {
+    return haystack.indexOf(kw) !== -1;
+  }
+
+  function highlightText(el, keywords) {
     if (!el) return;
     if (!el.hasAttribute('data-original')) {
       el.setAttribute('data-original', el.textContent);
     }
     var original = el.getAttribute('data-original');
-    if (!query) {
+    if (!keywords.length) {
       el.textContent = original;
       return;
     }
-    var regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
+    /* 一次替换全部关键词：先把原文按所有关键词切分，再包 span。
+       逐个关键词 replace 会让后一个词匹配到前一个词插入的标签里。 */
+    var pattern = keywords
+      .filter(function (k) { return k && k.length; })
+      .sort(function (a, b) { return b.length - a.length; })
+      .map(escapeRegExp)
+      .join('|');
+    if (!pattern) { el.textContent = original; return; }
+    var regex = new RegExp('(' + pattern + ')', 'gi');
+    /* 原文来自 textContent，不含标签，可以直接拼 innerHTML */
     el.innerHTML = original.replace(regex, '<span class="search-highlight">$1</span>');
   }
 
   function clearHighlights() {
-    var container = isTimeline ? timeline : list;
-    var titles = container.querySelectorAll('.archive-title');
+    var scope = isTimeline ? timeline : list;
+    if (!scope) return;
+    var titles = scope.querySelectorAll('.archive-title');
     for (var i = 0; i < titles.length; i++) {
       var t = titles[i];
-      if (t.hasAttribute('data-original')) {
-        t.textContent = t.getAttribute('data-original');
-      }
+      if (t.hasAttribute('data-original')) t.textContent = t.getAttribute('data-original');
     }
   }
 
-  // Toggle marker visibility based on visible items after it
+  /** 分组标题（.archive-marker）在它下面一条都不剩时隐藏掉。 */
   function updateMarkers() {
     if (!isTimeline) return;
     var markers = timeline.querySelectorAll('.archive-marker');
     for (var m = 0; m < markers.length; m++) {
       var marker = markers[m];
-      var item = marker.nextElementSibling;
+      var node = marker.nextElementSibling;
       var hasVisible = false;
-      // Scan forward until next marker or end
-      while (item && !item.classList.contains('archive-marker')) {
-        if (item.classList.contains('archive-item') && item.style.display !== 'none') {
+      while (node && !node.classList.contains('archive-marker')) {
+        if (node.classList.contains('archive-item') && node.style.display !== 'none') {
           hasVisible = true;
           break;
         }
-        item = item.nextElementSibling;
+        node = node.nextElementSibling;
       }
       marker.style.display = hasVisible ? '' : 'none';
     }
   }
 
-  // === Main search ===
-  function performSearch(query) {
-    var trimmed = query.trim().toLowerCase();
+  /* =========================================================================
+     主流程
+     ========================================================================= */
+
+  function performSearch(rawQuery) {
+    var keywords = parseQuery(rawQuery);
     var matchCount = 0;
 
     clearHighlights();
 
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var title = (item.getAttribute('data-title') || '').toLowerCase();
-      var tags = (item.getAttribute('data-tags') || '').toLowerCase();
-      var cats = (item.getAttribute('data-categories') || '').toLowerCase();
-      var content = (item.getAttribute('data-content') || '').toLowerCase();
+      var haystack = normalize(
+        (item.getAttribute('data-title') || '') + ' ' +
+        (item.getAttribute('data-tags') || '') + ' ' +
+        (item.getAttribute('data-categories') || '')
+      );
 
-      var haystack = title + ' ' + tags + ' ' + cats + ' ' + content;
+      /* AND：所有关键词都要命中 */
+      var hit = true;
+      for (var k = 0; k < keywords.length; k++) {
+        if (!keywordHit(haystack, keywords[k])) { hit = false; break; }
+      }
 
-      if (trimmed === '' || haystack.indexOf(trimmed) !== -1) {
+      if (hit) {
         item.style.display = '';
         matchCount++;
-
-        if (highlightEnabled && trimmed !== '') {
+        if (highlightEnabled && keywords.length) {
           var titleEl = item.querySelector('.archive-title');
-          if (title.indexOf(trimmed) !== -1) {
-            highlightText(titleEl, trimmed);
-          }
+          var title = normalize(item.getAttribute('data-title') || '');
+          /* 只有标题真的命中了才高亮，否则把标题拆碎没有意义 */
+          var titleHit = keywords.some(function (kw) { return keywordHit(title, kw); });
+          if (titleEl && titleHit) highlightText(titleEl, keywords);
         }
       } else {
         item.style.display = 'none';
       }
     }
 
-    // Sync marker visibility with filtered items
     updateMarkers();
 
-    // Update count
     if (countEl) {
-      if (trimmed === '') {
-        countEl.textContent = window.tr('archive.count_all', totalCount);
-      } else {
-        countEl.textContent = window.tr('archive.count_found', matchCount);
-      }
+      countEl.textContent = keywords.length
+        ? window.tr('archive.count_found', matchCount)
+        : window.tr('archive.count_all', totalCount);
     }
 
-    // Empty state
     if (emptyEl) {
-      emptyEl.style.display = (matchCount === 0 && trimmed !== '') ? 'block' : 'none';
+      emptyEl.style.display = (matchCount === 0 && keywords.length) ? 'block' : 'none';
     }
   }
 
-  // === Debounce ===
   function debounce(fn, delay) {
     var timer = null;
-    return function() {
+    return function () {
       var ctx = this;
       var args = arguments;
       clearTimeout(timer);
-      timer = setTimeout(function() { fn.apply(ctx, args); }, delay);
+      timer = setTimeout(function () { fn.apply(ctx, args); }, delay);
     };
   }
 
-  // === Init ===
-  var debouncedSearch = debounce(function() {
-    performSearch(this.value);
-  }, debounceDelay);
+  var run = debounce(function () { performSearch(input.value); }, debounceDelay);
+  input.addEventListener('input', run);
 
-  input.addEventListener('input', debouncedSearch);
+  /* Esc 清空并复位：过滤后想回到全量视图，逐个删字符很烦。 */
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && input.value) {
+      input.value = '';
+      performSearch('');
+    }
+  });
 
   performSearch('');
 })();

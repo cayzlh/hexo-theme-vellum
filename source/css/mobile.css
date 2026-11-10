@@ -381,14 +381,13 @@
    入口不再是独立的圆形浮动按钮，而是收进右下角那枚悬浮球的「目录」格
    （见 2.16）。面板本身保持原来的行为：从底部升起、遮罩、点链接后收起。
    ============================================ */
-@media screen and (max-width: 768px) {
+/* 断点 1023px：与 style.css 里 .toc 的隐藏点对齐。
+   769~1023px 这段平板上，桌面侧栏目录已经隐藏，底部面板必须同时到位，
+   否则这段宽度的读者会没有任何目录入口。悬浮球（.dock，见 2.16）
+   同样要放宽到 1023px，否则面板没有「目录」格可以打开。 */
+@media screen and (max-width: 1023px) {
   /* 隐藏 PC 端 TOC（覆盖 style.css 中已有的 display:none 逻辑） */
   .toc {
-    display: none !important;
-  }
-
-  /* 隐藏 toc-mobile 内联折叠块（由底部面板替代） */
-  .toc-mobile {
     display: none !important;
   }
 
@@ -1115,7 +1114,7 @@
    面板打开时它被盖住，由面板自己的 ✕ 与遮罩负责关闭——避免两个关闭
    入口在同一屏里竞争，也避免胶囊压在 TOC 末几条链接上。
    ============================================ */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 1023px) {
   /* 悬浮球存在时，顶部汉堡按钮隐身：两个导航入口同时出现会让用户犹豫
      该点哪个。挂在 body.has-dock 上（由 layout.ejs 按同一份配置计算），
      而不是无条件 display:none —— 于是 mobile.dock.enable=false 时汉堡
@@ -1248,6 +1247,41 @@
    覆盖 mobile.css 中通用规则
    ============================================ */
 @media screen and (max-width: 768px) {
+  /* 年份/月份导航条在窄屏改成横向可滚动的一行：
+     79 个年份月份如果换行堆三四排，会把文章列表挤到首屏之外。
+     横向滚动 + 隐藏滚动条，读起来像一条标签栏。 */
+  .archive-jump {
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-bottom: 16px;
+    padding-bottom: 2px;
+  }
+
+  .archive-jump::-webkit-scrollbar {
+    display: none;
+  }
+
+  .archive-jump__list {
+    flex-wrap: nowrap;
+    gap: 14px;
+  }
+
+  .archive-jump__label {
+    flex-shrink: 0;
+  }
+
+  .archive-jump__link {
+    white-space: nowrap;
+  }
+
+  /* 分组标题在窄屏收紧间距，否则 24 个分组会把页面拉得很长 */
+  .archive-marker {
+    margin: 18px 0 6px;
+  }
+
   .archive-item .archive-date {
     font-size: 0.8rem;
     width: 78px;

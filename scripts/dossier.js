@@ -15,6 +15,7 @@ var tr = require('./lib/i18n-core')(hexo).tr;
  */
 
 const fs = require('fs');
+const tocCore = require('./lib/toc-core');
 const path = require('path');
 
 // ============================================
@@ -501,37 +502,30 @@ hexo.extend.helper.register('render_md', function(content) {
 });
 
 // ============================================
-// TOC extractor for dossier pages
+// TOC —— 复用共享实现（scripts/lib/toc-core.js）
 // ============================================
+/* 以前这里和 scripts/helpers/toc.js 各有一份一模一样的「抽标题建树」代码，
+   连正则都相同；两边只要有一边修 bug 另一边就静默保持原样。
+   现在统一走 toc-core，配置在调用处传进去。 */
+
 function extractToc(html) {
-  if (!html) return [];
   var maxDepth = (hexo.theme.config.toc && hexo.theme.config.toc.max_depth) || 3;
-  var toc = [];
-  var stack = [{ children: toc, level: 0 }];
-  var re = /<h([1-6])\s+id="([^"]*)"[^>]*>(.*?)<\/h\1>/gi;
-  var m;
-  while ((m = re.exec(html)) !== null) {
-    var lvl = parseInt(m[1]);
-    if (lvl > maxDepth) continue;
-    var item = { level: lvl, id: m[2], text: m[3].replace(/<[^>]*>/g, '').trim(), children: [] };
-    while (stack.length > 1 && stack[stack.length - 1].level >= lvl) stack.pop();
-    if (stack[stack.length - 1].level < lvl) {
-      stack[stack.length - 1].children.push(item);
-      stack.push(item);
-    }
-  }
-  return toc;
+  return tocCore.extractToc(html, maxDepth);
 }
 
-// Helper to render TOC HTML (unified structure)
-hexo.extend.helper.register('render_toc', function(toc) {
+/* 档案页的目录 HTML。属性与文章页那份保持一致（toc-link + data-toc），
+   这样 /js/toc.js 一套选择器就能同时驱动两处，不用再按页面类型分支。 */
+hexo.extend.helper.register('render_toc', function (toc) {
   if (!toc || toc.length === 0) return '';
   function render(items) {
     var h = '<ul class="toc-list">';
-    items.forEach(function(item) {
-      h += '<li class="toc-item toc-level-' + item.level + '">';
-      h += '<a href="#' + item.id + '" class="toc-link" data-toc="' + item.id + '">' + item.text + '</a>';
-      if (item.children && item.children.length > 0) h += render(item.children);
+    items.forEach(function (item) {
+      var hasChildren = !!(item.children && item.children.length > 0);
+      h += '<li class="toc-item toc-level-' + item.level
+        + (hasChildren ? ' has-children' : '') + '">';
+      h += '<a href="#' + item.id + '" class="toc-link" data-toc="' + item.id + '">'
+        + item.text + '</a>';
+      if (hasChildren) h += render(item.children);
       h += '</li>';
     });
     h += '</ul>';

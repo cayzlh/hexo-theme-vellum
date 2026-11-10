@@ -156,14 +156,16 @@ var bodyHtml = page.content_html || render_md(page.content);
   </main>
 
   <!-- Right: TOC -->
-  <aside class="dossier-toc" id="dossier-toc">
+  <aside class="dossier-toc" id="dossier-toc"
+         data-toc-highlight="<%= (theme.toc || {}).highlight_on_scroll !== false %>"
+         data-toc-collapse="<%= (theme.toc || {}).auto_collapse !== false %>">
     <div class="toc-fixed">
       <div class="toc-wrapper<%= (theme.toc.show_tree_line === false) ? ' toc-no-tree-line' : '' %>">
         <div class="toc-title"><%= tr('toc.title') %></div>
         <% if (!isHome && page.toc && page.toc.length > 0) { %>
           <%- render_toc(page.toc) %>
           <div class="toc-footer">
-            <button class="toc-back-top" onclick="window.scrollTo({top:0,behavior:'smooth'});var tc=document.querySelector('.dossier-toc .toc-fixed');if(tc)tc.scrollTop=0;return false">
+            <button class="toc-back-top" type="button">
               <span class="toc-back-icon">↑</span> <%= tr('common.back_to_top') %>
             </button>
           </div>
@@ -485,8 +487,13 @@ var bodyHtml = page.content_html || render_md(page.content);
   }
 }
 
-/* Tablet (768px – 1024px): single column, sidebar on top */
-@media (max-width: 1024px) {
+/* Tablet (769px – 1023px): single column, sidebar on top
+   ---------------------------------------------------------------------------
+   这里原来写的是 max-width: 1024px，把 .dossier-toc 一起隐掉了。
+   但底部面板 / 悬浮球此前只在 ≤768px 出现 —— 于是 769~1023px 这段宽度里
+   档案页没有任何目录入口（侧栏被这段藏了，面板还没到出现的宽度）。
+   现在统一到 1023px：.dossier-toc 在 >1023px 可见，≤1023px 交给底部面板。 */
+@media (max-width: 1023px) {
   .dossier-layout {
     flex-direction: column;
     padding: 0 16px;
@@ -573,8 +580,6 @@ var bodyHtml = page.content_html || render_md(page.content);
 
 <script>
 (function() {
-  const isHome = <%= isHome ? 'true' : 'false' %>;
-
   // --- Sidebar: highlight current article + auto-scroll ---
   const sidebar = document.querySelector('.dossier-sidebar');
   const currentPath = window.location.pathname;
@@ -605,142 +610,9 @@ var bodyHtml = page.content_html || render_md(page.content);
     }
   }
 
-  // --- TOC: smooth scroll + IntersectionObserver tracking + auto-collapse ---
-  if (!isHome) {
-    var tocLinks = document.querySelectorAll('#dossier-toc .toc-link');
-    if (tocLinks.length) {
-      tocLinks.forEach(function(l) {
-        l.addEventListener('click', function(e) {
-          e.preventDefault();
-          var id = this.getAttribute('data-toc');
-          var el = document.getElementById(id);
-          if (el) {
-            window.scrollTo({
-              top: el.getBoundingClientRect().top + window.pageYOffset - 80,
-              behavior: 'smooth'
-            });
-          }
-        });
-      });
-
-      var dossierHighlightOnScroll = <%= theme.toc && theme.toc.highlight_on_scroll !== false ? 'true' : 'false' %>;
-      var dossierAutoCollapse = <%= theme.toc && theme.toc.auto_collapse !== false ? 'true' : 'false' %>;
-
-      if (dossierHighlightOnScroll) {
-        // Auto-collapse: 仅在禁用折叠（show all）时才需要添加类
-        var dossierTocWrapper = document.querySelector('#dossier-toc .toc-wrapper');
-        if (dossierTocWrapper && !dossierAutoCollapse) {
-          dossierTocWrapper.classList.add('toc-auto-collapse-disabled');
-        }
-
-        function getParentH2(item) {
-          var el = item;
-          while (el && !el.classList.contains('toc-level-2')) el = el.parentElement;
-          return el;
-        }
-
-        // ===== 位置追踪 — 始终高亮"距离视口顶部最近的标题" =====
-        var dossierHeadingPositions = [];
-        tocLinks.forEach(function(l) {
-          var id = l.getAttribute('data-toc');
-          var el = document.getElementById(id);
-          if (el) {
-            dossierHeadingPositions.push({ el: el, link: l, id: id });
-          }
-        });
-
-        // 计算应该高亮哪个标题（距离视口顶部最近的）
-        function dossierGetActiveHeading() {
-          if (dossierHeadingPositions.length === 0) return null;
-          var headerOffset = 80; // 与 smooth scroll 偏移量一致
-          var best = null;
-          var bestDist = Infinity;
-          for (var i = 0; i < dossierHeadingPositions.length; i++) {
-            var top = dossierHeadingPositions[i].el.getBoundingClientRect().top;
-            var dist = Math.abs(top - headerOffset);
-            if (dist < bestDist) {
-              bestDist = dist;
-              best = dossierHeadingPositions[i];
-            }
-          }
-          return best;
-        }
-
-        var dossierCurrentSection = null;
-        var dossierActiveHeading = null;
-
-        function dossierUpdateHighlight() {
-          var heading = dossierGetActiveHeading();
-          if (!heading) return;
-          // 相同标题重复高亮则跳过
-          if (heading.link.classList.contains('active')) return;
-
-          // 移除所有高亮
-          document.querySelectorAll('#dossier-toc .toc-link.active').forEach(function(l) {
-            l.classList.remove('active');
-          });
-
-          // 高亮新标题
-          heading.link.classList.add('active');
-
-          // TOC 容器滚动到高亮标题可见
-          heading.link.scrollIntoView({ block: 'nearest' });
-
-          // 自动折叠展开
-          if (dossierAutoCollapse) {
-            var h2Parent = getParentH2(heading.link);
-            if (h2Parent && h2Parent !== dossierCurrentSection) {
-              if (dossierCurrentSection) dossierCurrentSection.classList.remove('expanded');
-              h2Parent.classList.add('expanded');
-              dossierCurrentSection = h2Parent;
-            }
-          }
-        }
-
-        // IntersectionObserver 触发位置重算（仅触发，不依赖 isIntersecting）
-        var dossierObserver = new IntersectionObserver(function() {
-          dossierUpdateHighlight();
-        }, { threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] });
-
-        tocLinks.forEach(function(l) {
-          var id = l.getAttribute('data-toc');
-          var el = document.getElementById(id);
-          if (el) dossierObserver.observe(el);
-        });
-
-        // 滚动事件监听（requestAnimationFrame 节流）
-        var dossierTicking = false;
-        window.addEventListener('scroll', function() {
-          if (!dossierTicking) {
-            window.requestAnimationFrame(function() {
-              dossierUpdateHighlight();
-              dossierTicking = false;
-            });
-            dossierTicking = true;
-          }
-        });
-
-        // 初始状态：折叠所有，展开第一个 h2
-        if (dossierAutoCollapse) {
-          var dossierH2s = document.querySelectorAll('#dossier-toc .toc-level-2');
-          if (dossierH2s.length > 0) {
-            dossierH2s.forEach(function(h2) { h2.classList.remove('expanded'); });
-            dossierH2s[0].classList.add('expanded');
-            dossierCurrentSection = dossierH2s[0];
-          } else {
-            // 无 h2（仅 h3+）时跳过折叠，显示所有层级
-            var wrapper = document.querySelector('#dossier-toc .toc-wrapper');
-            if (wrapper) wrapper.classList.add('toc-auto-collapse-disabled');
-          }
-        }
-
-        // 初始高亮（下一帧执行，确保 DOM 布局完成）
-        requestAnimationFrame(function() {
-          dossierUpdateHighlight();
-        });
-      }
-    }
-  }
+  /* TOC 的高亮 / 折叠 / 平滑跳转统一由 /js/toc.js 处理 —— 这里不再重复实现。
+     以前这份是 toc.ejs 里那段逻辑的副本，已经漂移出真实差异：
+     highlight_on_scroll:false + auto_collapse:true 时整块目录会被藏掉。 */
 
 })();
 </script>

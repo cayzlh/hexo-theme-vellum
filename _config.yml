@@ -3,7 +3,7 @@
 
 info:
   name: Vellum
-  version: 0.4.2
+  version: 0.5.0
 
 # =============================================
 # 界面语言（i18n）
@@ -600,6 +600,30 @@ archive:
   highlight_match: true
   # 是否显示搜索匹配数量
   show_match_count: true
+
+# =============================================
+# Search 全站搜索（/search/）
+# =============================================
+# 构建期把文章与档案正文抽成纯文本，生成 /search.json（或分片），
+# 前端 /search/ 页拉取后在浏览器里做子串检索。
+#
+# 与上面的 archive.search_enable 是两件事：
+#   archive.*   归档页的**标题过滤**，纯 DOM，不额外传输数据
+#   search.*    全站**正文检索**，需要一份索引
+search:
+  # 总开关。false 时不生成索引，/search/ 页仍可打开但搜不出东西。
+  enable: true
+  # 每篇正文保留多少字符进索引。
+  # 调大会提高长文深处的命中率，代价是索引线性变大：
+  # 本站 181 篇，1500 字 ≈ 527 KB（gzip 202 KB），不限长度 ≈ 977 KB。
+  text_limit: 1500
+  # 分片大小（篇/片）。超过这个数就把索引切成 search-0.json、search-1.json…
+  # 前端并发拉取；文章数突破几百篇时才有意义，但结构先留好。
+  shard_size: 120
+  # 页面标题。留空 = 用语言包（search_page.title）
+  page_title: ''
+  # 页面描述。留空 = 用语言包（search_page.description）
+  page_description: ''
 
 # =============================================
 # Daily News — 60s-API 数据源

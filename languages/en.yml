@@ -55,6 +55,13 @@ archive:
   empty_hint: Try another keyword
   month_label: '%d'
   year_month_label: '%s·%d'
+  search_fulltext: Search full text →
+  # ---- Archive jump nav / grouping (links the three archive levels) ----
+  jump_nav: Archive navigation
+  by_year: By year
+  by_month: 'Months in %s'
+  year_months: '%s · Months'
+  back_to_year: 'Back to %s'
 
 taxonomy:
   category: 'Category: %s'
@@ -192,3 +199,17 @@ seo:
   topic_clause: 'Topics covered include %s.'
   more_suffix: ' and more'
   list_separator: ', '
+
+# ---- Search page (/search/) ----
+search_page:
+  title: Search
+  description: Full-text search across every post and dossier chapter, with results ranked by relevance and matched fragments highlighted.
+  intro: Search the body text of posts and dossier chapters. Separate words with spaces; every word must match.
+  placeholder: Search post content...
+  clear: Clear
+  loading: Loading index...
+  result_count: '%d results (out of %d documents)'
+  truncated: Showing the first %d only; try a more specific term.
+  empty_title: Nothing matched
+  empty_hint: Try different words, or use fewer keywords.
+  error: Failed to load the index. Please reload and try again.

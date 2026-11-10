@@ -1,0 +1,32 @@
+<%#
+  归档页年份/月份导航条
+  ===========================================================================
+  归档页有 47 个（1 个主归档 + 7 个年页 + 39 个月页），但**彼此之间一个链接
+  都没有**：主归档不指向年页、年页不指向月页。这些页面只能靠 sitemap 和搜索
+  引擎进入——对读者等于不存在，对爬虫是 46 份互不相干的重复切片。
+
+  这个 partial 把导航条补上，三个层级各用一次：
+    主归档  years   → 每个年份
+    年页    months  → 该年的每个月
+    月页    siblings → 同年其它月份
+
+  参数：
+    items  [{ label, url, count, active }]
+    label  可选的小标题（如「按年份」），留空不渲染
+%>
+<% var navItems = items || []; %>
+<% if (navItems.length) { %>
+<nav class="archive-jump" aria-label="<%= label || tr('archive.jump_nav') %>">
+  <% if (label) { %><span class="archive-jump__label"><%= label %></span><% } %>
+  <ul class="archive-jump__list">
+    <% navItems.forEach(function (it) { %>
+      <li>
+        <a href="<%= url_for(it.url) %>"
+           class="archive-jump__link<%= it.active ? ' is-active' : '' %>"<%- it.active ? ' aria-current="page"' : '' %>>
+          <%= it.label %><% if (it.count) { %><span class="archive-jump__count"><%= it.count %></span><% } %>
+        </a>
+      </li>
+    <% }); %>
+  </ul>
+</nav>
+<% } %>

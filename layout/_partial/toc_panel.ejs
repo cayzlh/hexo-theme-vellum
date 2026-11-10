@@ -1,33 +1,45 @@
 <%
-/**
- * 移动端目录底部面板（独立于桌面侧栏 TOC）
- * ---------------------------------------------------------------------------
- * 单独成块的原因：dossier 文章页的目录由 dossier_page.ejs 的侧栏负责，
- * 在窄屏被整体隐藏，而它自己的 page.toc 是齐的。把面板独立出来后，
- * 这类页面也能从悬浮球的「目录」格拿到目录 —— 而桌面侧栏的渲染条件
- * 保持原样（dossier 不重复渲染一套）。
- *
- * 交互由 source/js/mobile.js 驱动；这里的链接带 data-toc 供其定位标题。
- */
-function renderTocPanel(items) {
-  var html = '';
-  for (var i = 0; i < items.length; i++) {
-    var item = items[i];
-    html += '<li class="toc-item toc-level-' + item.level + '">';
-    html += '<a href="#' + item.id + '" class="toc-link" data-toc="' + item.id + '">' + item.text + '</a>';
-    if (item.children && item.children.length > 0) {
-      html += '<ul class="toc-list">' + renderTocPanel(item.children) + '</ul>';
+  /* ==========================================================================
+     移动端 / 平板端目录底部面板
+     --------------------------------------------------------------------------
+     独立于桌面侧栏：档案页的侧栏目录在窄屏被整体隐藏，而它自己的 page.toc
+     是齐的，所以「有目录却没有入口」的页面也能从悬浮球拿到一份目录。
+
+     ★ 与文章页共用的规则（重要）：
+       这里和 layout.ejs 里的 showToc 不是同一个条件。文章页有桌面侧栏，
+       面板是它的窄屏替代；档案页没有桌面侧栏，面板是它**唯一**的目录入口。
+       两者的关系在 layout.ejs 里算，模板只管渲染。
+
+     折叠不在这里做：面板整块展示，层级由 /js/toc.js 统一接管
+     （它会给两个容器都加 .toc-collapsible）。
+     ========================================================================== */
+
+  function renderTocPanel(items) {
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var hasChildren = !!(item.children && item.children.length > 0);
+      html += '<li class="toc-item toc-level-' + item.level
+        + (hasChildren ? ' has-children' : '') + '">';
+      html += '<a href="#' + item.id + '" class="toc-link" data-toc="' + item.id + '">'
+        + item.text + '</a>';
+      if (hasChildren) {
+        html += '<ul class="toc-list">' + renderTocPanel(item.children) + '</ul>';
+      }
+      html += '</li>';
     }
-    html += '</li>';
+    return html;
   }
-  return html;
-}
 %>
 <div class="toc-panel-overlay"></div>
-<div class="toc-panel" id="tocPanel" role="dialog" aria-modal="true" aria-label="<%= tr('toc.title') %>">
+<%# 面板**从不折叠**（data-toc-collapse 固定 false）：它存在的意义就是
+    「一次看清整篇结构」。/js/toc.js 读到 false 就不会加 .toc-collapsible，
+    而新 CSS 的默认态是全展开 —— 于是 h3 自然可见。 %>
+<div class="toc-panel" id="tocPanel" role="dialog" aria-modal="true" aria-label="<%= tr('toc.title') %>"
+     data-toc-collapse="false">
   <div class="toc-panel-header">
     <span class="toc-panel-title"><%= tr('toc.title') %></span>
-    <button class="toc-panel-close" aria-label="<%= tr('toc.close') %>">✕</button>
+    <button class="toc-panel-close" type="button" aria-label="<%= tr('toc.close') %>">✕</button>
   </div>
   <div class="toc-panel-body">
     <ul class="toc-list"><%- renderTocPanel(page.toc) %></ul>

@@ -2,7 +2,7 @@
 
 > 一个为 [Hexo](https://hexo.io/) 打造的极简博客主题。重心在**阅读体验**、**构建性能**和**可配置性**。
 
-![Version](https://img.shields.io/badge/version-0.4.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
 ![Hexo](https://img.shields.io/badge/hexo-6.x%20%7C%207.x%20%7C%208.x-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
@@ -15,7 +15,8 @@
 - **订阅页** —— 构建期聚合你关注的 RSS/Atom，生成静态 `/subscriptions/`；支持从远程接口叠加订阅列表
 - **SEO 优先** —— canonical、Open Graph、JSON-LD、完整 sitemap，全部自实现，不依赖插件
 - **深浅色** —— 手动 / 跟随系统 / 按日出日落自动切换，两套独立色板
-- **目录** —— 桌面侧栏跟随高亮 + 手机底部面板，没标题的页面不出现死键
+- **目录** —— 桌面侧栏跟随高亮 + 平板/手机底部面板（同一套 JS），折叠状态默认全展开、JS 参与才收，没标题的页面不出现死键
+- **全站搜索** —— 构建期生成 `/search.json`，`/search/` 页做正文检索，支持多关键词 AND 与结果高亮
 - **页面过渡** —— View Transitions API，不支持时自动降级
 - **移动端悬浮球** —— 右下角竖向胶囊，`目录` 与 `导航` 各一格
 - **多语言界面** —— 内置简体中文 / 繁體中文 / English，界面文案跟着站点语言走
@@ -32,7 +33,7 @@ cd your-hexo-site
 git clone https://github.com/cayzlh/hexo-theme-vellum.git themes/vellum
 
 # 或者锁定到某个版本（推荐，升级前先看 Releases 的版本说明）
-git clone --branch v0.4.2 --depth 1 https://github.com/cayzlh/hexo-theme-vellum.git themes/vellum
+git clone --branch v0.5.0 --depth 1 https://github.com/cayzlh/hexo-theme-vellum.git themes/vellum
 ```
 
 站点 `_config.yml` 里指定主题：
@@ -171,6 +172,42 @@ subscriptions:
 ```bash
 node themes/vellum/tools/test-subscription-merge.js
 ```
+
+---
+
+## 全站搜索（`/search/`）
+
+主题自带一个纯静态的正文检索，不需要任何搜索服务。
+
+**工作方式**：构建期把每篇文章与每篇档案章节的正文抽成纯文本，
+写成 `/search.json`（或分片 `search-0.json`、`search-1.json`…）；
+`/search/` 页拉取后在浏览器里做子串检索并按相关度排序。
+
+**体积**：正排索引，每篇保留 `text_limit` 个字符（默认 1500）。
+181 篇的站实测约 500 KB（gzip 约 190 KB）。
+调大能提高长文深处的命中率，代价是索引线性变大。
+
+**配置**（`_config.vellum.yml`）：
+
+```yaml
+search:
+  enable: true          # 总开关；false 时不生成索引
+  text_limit: 1500      # 每篇正文保留多少字符进索引
+  shard_size: 120       # 每片多少篇；超过就切分片，前端并发拉取
+  page_title: ''        # 留空 = 用语言包 search_page.title
+  page_description: ''  # 留空 = 用语言包 search_page.description
+```
+
+**和归档页搜索的分工**：
+
+| | 归档页搜索框 | `/search/` |
+| --- | --- | --- |
+| 范围 | 当页文章的**标题 / 标签 / 分类** | 全站**正文** |
+| 数据 | 不需要额外传输 | 首次搜索时拉索引（约 200 KB gzip） |
+| 适合 | 快速筛一页 | 找一个记不清标题的概念 |
+
+`/search/` 不会进 sitemap（空搜索框是薄页面），但有 `noindex, follow` 的
+robots 与完整标题，带 `?q=` 的链接可以正常分享。
 
 ---
 

@@ -38,6 +38,9 @@ var hasDock = !(theme.mobile && theme.mobile.enable === false) && dockCfg.enable
   <% if (panelToc) { %>
     <%- partial('_partial/toc_panel') %>
   <% } %>
+  <% if (panelToc || showToc) { %>
+  <script src="<%= url_for('/js/toc.js') %>" defer></script>
+  <% } %>
   <% if (theme.mobile && theme.mobile.enable !== false) { %>
   <script src="<%= url_for('/js/mobile.js') %>" defer></script>
   <% } %>

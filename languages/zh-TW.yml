@@ -56,6 +56,13 @@ archive:
   empty_hint: 換個關鍵字試試
   month_label: '%d月'
   year_month_label: '%s·%d月'
+  search_fulltext: 搜正文 →
+  # ---- 歸檔導覽列 / 分組（歸檔頁三層互連） ----
+  jump_nav: 歸檔導覽
+  by_year: 按年份
+  by_month: '%s 年的月份'
+  year_months: '%s 年 · 月份'
+  back_to_year: 返回 %s 年
 
 taxonomy:
   category: '分類：%s'
@@ -191,3 +198,17 @@ seo:
   topic_clause: '涉及%s等方向。'
   more_suffix: 等
   list_separator: '、'
+
+# ---- 搜尋頁（/search/） ----
+search_page:
+  title: 搜尋
+  description: 全站全文檢索：在文章正文、檔案章節裡找關鍵字，結果按相關度排序並標出命中片段。
+  intro: 在文章與檔案的正文裡查關鍵字。用空格分隔多個詞，需要同時命中。
+  placeholder: 搜尋文章正文...
+  clear: 清除
+  loading: 正在載入索引...
+  result_count: 找到 %d 條結果（共 %d 篇內容）
+  truncated: 僅顯示前 %d 條，換個更具體的字試試。
+  empty_title: 沒有找到相關內容
+  empty_hint: 換個說法，或減少關鍵字再試。
+  error: 索引載入失敗，請重新整理再試。

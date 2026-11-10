@@ -79,6 +79,14 @@ function isExcluded(route) {
   if (/^google[a-f0-9]{16}\.html$/i.test(p)) return true;
   if (/^(BingSiteAuth\.xml|IndexNow\.txt|[a-f0-9]{32}\.txt)$/i.test(p)) return true;
 
+  /* 工具页：内容由 generator 生成，没有 front-matter，所以上面那套
+     「page.sitemap === false」的排除标记够不到它们（excludedPaths 只从
+     locals.pages/posts/tags/categories 里收集）。这里按路径列出。
+       /search/   空的搜索框，页面本身没有自有内容，收录进去是薄页面
+     它们的 robots meta 仍然是 noindex, follow —— 两处独立表态，
+     少一处都不会出错。 */
+  if (/^search\/index\.html$/.test(p)) return true;
+
   // 分页页（/page/2/、/subscriptions/page/2/…）**照收**。
   // 曾经想按「和内页重复」把它们剔掉，但那是错的：它们各自有 canonical、
   // 各自能被翻页链接爬到，剔掉之后反而是「可索引但没申报」。真正该做的是
