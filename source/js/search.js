@@ -183,6 +183,13 @@
 
     updateMarkers();
 
+    /* 筛选改变了条目的可见性，右侧刻度尺的高度和刻度位置全部失效。
+       search.js 与 archive-ruler.js 是两个独立文件（不保证加载顺序），
+       所以走 window 上的具名钩子，而不是直接引用对方。 */
+    if (typeof window.__vellumRulerReposition === 'function') {
+      window.__vellumRulerReposition();
+    }
+
     if (countEl) {
       countEl.textContent = keywords.length
         ? window.tr('archive.count_found', matchCount)

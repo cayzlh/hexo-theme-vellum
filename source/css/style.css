@@ -632,6 +632,16 @@ html.dark .archive-item .archive-title:hover {
 .archive-items {
   flex: 1;
   min-width: 0;
+  /* ★ 必须显式 flex-start，不能吃默认的 stretch。
+     .timeline-ruler 的 height 是 JS 按内容写死的绝对值（本站约 4833px），
+     flex 行高会被它撑开，而 .archive-items 作为 stretch 项会被一起拉到同样高。
+     后果：归档页筛选到 0 条时，里面的 .archive-item / .archive-marker 全是
+     display:none，但 .archive-items.offsetHeight 仍然是 4833 —— JS 里
+     「容器高度为 0 就清掉 ruler 高度」的判定永远进不去，形成自持死锁，
+     下方「没有找到匹配的文章」空态被推到 4833px 之外，首屏只剩空白。
+     改成 flex-start 后 .archive-items 只占自身内容高度，死锁解除。 */
+  align-self: flex-start;
+  width: 100%;
 }
 
 /* ===== 右侧刻度尺 ===== */
