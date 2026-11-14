@@ -858,8 +858,20 @@ html.dark .nav-link.active::after {
 }
 
 /* ===== Dropdown Menu ===== */
+/* 下拉项外面多包一层 div（.dropdown-menu 的定位锚点），这一层必须跟
+   一级链接长得一样高，否则「关于」会跟旁边几格错位。
+   起因：.nav 是 flex 容器，直接把 .nav-link 放进来的那几格会被块级化，
+   高度 = 上下 padding + 行高；而 .nav-link 落在 .nav-item 里时仍是
+   inline，inline 的上下 padding 不参与行盒，外层 div 只剩自己的
+   line-height —— 桌面端矮 4px，768~1023px 更糟：那份断点里的
+   `a { min-height: 44px }` 撑高了里面的 <a>，却撑不开外层的 div，
+   两者一居中，「关于」的文字就往下沉了半行。
+   所以这层也用 flex 居中：里面的 <a> 被块级化成 flex item，
+   padding / min-height 都能落到盒子上，高度自然和同级对齐。 */
 .nav-item {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .dropdown-menu {
