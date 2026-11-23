@@ -35,6 +35,10 @@
 
 var SEARCH_PATH = 'search';
 
+/* 一行笔记的清洗与锚点生成与页面模板共用同一份实现（见下方
+   collectSnippetDocs 的注释）。 */
+var snippetLib = require('./lib/snippet-lib');
+
 /** 默认值，可被 theme.search.text_limit / shard_size 覆盖。 */
 var DEFAULT_TEXT_LIMIT = 1500;
 var DEFAULT_SHARD_SIZE = 120;
@@ -268,6 +272,36 @@ function collectDossierDocs() {
 }
 
 /**
+ * 一行笔记（source/_data/snippets.yml）也要进搜索索引。
+ *
+ * 为什么值得收录：这类内容的检索动机恰恰最强——「我上次记的那条激活命令
+ * 到底是什么来着」。它不是文章、没有正文路由，collectDocs / collectDossierDocs
+ * 两条路都收集不到，所以单独取一份。
+ *
+ * 清洗与锚点生成全部交给 lib/snippet-lib.js：页面模板渲染的卡片 id 和这里
+ * 产出的 url `#slug` 必须同源，否则从搜索结果点进来会落到错误的位置（甚至
+ * 页面顶部）。这也是为什么这里不走「自己解析 front-matter」那套。
+ *
+ * 开关跟随 snippets.enable：关掉那个页面之后，索引里留一堆指向空页的条目
+ * 只会让搜索结果变脏。
+ */
+function collectSnippetDocs() {
+  var cfg = (hexo.theme.config && hexo.theme.config.snippets) || {};
+  if (cfg.enable === false || cfg.enable === 'false') return [];
+
+  var data = hexo.locals.get('data') || {};
+  var raw = data.snippets;
+  if (!Array.isArray(raw) || !raw.length) return [];
+
+  var list = snippetLib.normalizeAll(raw);
+
+  /* url 落点由生成器决定的实际页面路径给出。主题配置里没做 snippets.path
+     的可配项（页面固定在 /snippets/），所以这里写常量，与
+     scripts/snippets.js 的 PAGE_PATH 对应。 */
+  return snippetLib.toSearchEntries(list, '/snippets/');
+}
+
+/**
  * 生成器：产出 /search.json（或分片清单）。
  *
  * 注册成 generator 而不是 after_generate 里手动写文件——走路由能得到
@@ -277,7 +311,7 @@ hexo.extend.generator.register('search_index', function (locals) {
   var cfg = hexo.theme.config.search || {};
   if (cfg.enable === false) return [];
 
-  var docs = collectDocs(locals).concat(collectDossierDocs());
+  var docs = collectDocs(locals).concat(collectDossierDocs()).concat(collectSnippetDocs());
 
   /* 稳定排序：先按日期倒序，再把没有日期的（档案多数没有）放后面。
      搜索结果里同分条目按这个顺序出现，读者看到的是「新的在前」。 */

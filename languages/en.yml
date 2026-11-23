@@ -133,6 +133,24 @@ links:
   empty_title: No bookmarks yet
   empty_hint: Add an entry to source/_data/bookmarks.yml, or turn on bookmarks.remote to pull them from the hub.
 
+# ---- Snippets (/snippets/) ----
+snippets:
+  title: Snippets
+  page_description: 'One-liners worth keeping: commands, addresses, flags, tricks. %d entries across %d categories, each copyable in one click, filterable by keyword and included in site search — the things I will definitely forget but must get exactly right when I need them.'
+  intro: The one-liners I always forget and never should.
+  stats: '%d entries · %d categories'
+  uncategorized: Uncategorized
+  placeholder: Filter by title, command or tag...
+  clear: Clear filter
+  copy: Copy
+  copied: Copied!
+  no_match: Nothing matched
+  match_count: '%d matched'
+  open_source: Open source
+  empty_title: Nothing recorded yet
+  empty_hint: Add an entry to source/_data/snippets.yml and it shows up on the next build.
+
+# ---- Code blocks ----
 code:
   copy_code: Copy code
   copy: Copy

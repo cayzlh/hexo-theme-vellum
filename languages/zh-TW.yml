@@ -133,6 +133,24 @@ links:
   empty_title: 這裡還沒有收藏任何站點
   empty_hint: 在 source/_data/bookmarks.yml 裡加一條，或打開 bookmarks.remote 從 hub 拉取。
 
+# ---- 一行筆記（/snippets/） ----
+snippets:
+  title: 一行筆記
+  page_description: '一行就夠的小抄：指令、位址、開關、技巧。共 %d 條、分 %d 類，每條都能一鍵複製，支援按關鍵字過濾，也參與全站搜尋；記的都是下次一定會想不起來、但真到用時又必須準確的東西。'
+  intro: 記那些一行就夠、但下次一定想不起來的東西。
+  stats: '%d 條 · %d 個分類'
+  uncategorized: 未分類
+  placeholder: 過濾標題、指令、標籤…
+  clear: 清空過濾
+  copy: 複製
+  copied: 已複製
+  no_match: 沒有符合的記錄
+  match_count: 符合 %d 條
+  open_source: 開啟來源
+  empty_title: 這裡還沒有記錄
+  empty_hint: 在 source/_data/snippets.yml 裡加一條，下次建置就會出現。
+
+# ---- 程式碼區塊 ----
 code:
   copy_code: 複製程式碼
   copy: 複製

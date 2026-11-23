@@ -1,0 +1,168 @@
+<%
+  /* ==========================================================================
+     一行笔记页（/snippets/）
+     --------------------------------------------------------------------------
+     结构（从上到下）：
+       1. 页头：eyebrow（数量统计）→ 标题 → 一句说明
+       2. 过滤框 + 结果状态行
+       3. 分组：分类作小标题，组内是一张张卡片
+       4. 空状态：没有记录时给一句能读的说明，不是一张白纸
+
+     为什么卡片的主体是代码而不是标题
+     --------------------------------
+     这页的读者是「来找那行命令」的，不是来浏览标题的。所以命令占据卡片
+     最显眼的位置（等宽字体、独立底色、一键复制），标题退成一句索引词。
+     标题行做成细弱的 mono 小字压在代码下方，读者扫视时先看到能拿走的东西。
+
+     为什么复制按钮自己做而不是复用 .code-block
+     ----------------------------------------
+     主题的 .code-block 由脚本在构建期把 <pre> 重写成 figure.code-block，
+     拷贝逻辑（source/js/main.js）只认 `.code-block .code-copy-btn` 这个
+     选择器。这里用的是 `<pre><code>` 的裸结构（数据来自 yml，不是 Markdown
+     正文，不经过渲染器），所以按钮另给一套 `snippet-card__copy` 的钩子，
+     避免和正文代码块的选择器互相抢。
+     ========================================================================== */
+  var groups = page.groups || [];
+  var total = page.total || 0;
+  var categoryCount = page.categoryCount || 0;
+  var intro = page.intro || '';
+
+  /* 「未分类」的显示文案由语言包给，纯函数只负责把它归到最后。
+     category 为 null 是 lib 里标记未分类的哨兵值。 */
+  function groupName(category) {
+    return category || tr('snippets.uncategorized');
+  }
+%>
+
+<div class="snippets-page">
+
+  <%# ===== 1. 页头 ===== %>
+  <header class="snippets-head">
+    <% if (page.showCount) { %>
+      <%# 统计放在标题之前当 kicker：先给规模感，再给名字。
+          aria-hidden 是因为标题本身已经说明了这是什么页。 %>
+      <p class="snippets-head__kicker" aria-hidden="true"><%= tr('snippets.stats', total, categoryCount) %></p>
+    <% } %>
+    <h1 class="snippets-head__title"><%= page.title %></h1>
+    <% if (intro) { %>
+      <p class="snippets-head__intro"><%= intro %></p>
+    <% } %>
+  </header>
+
+  <% if (groups.length === 0) { %>
+
+    <%# ===== 空状态 =====
+        把「为什么空」和「怎么填」都写出来。只说「暂无内容」等于什么都
+        没说——读者分不清是自己配错了还是主题没做。 %>
+    <div class="snippets-empty">
+      <p class="snippets-empty__title"><%= tr('snippets.empty_title') %></p>
+      <p class="snippets-empty__hint"><%= tr('snippets.empty_hint') %></p>
+    </div>
+
+  <% } else { %>
+
+    <%# ===== 2. 过滤框 =====
+        纯前端 DOM 过滤（source/js/snippets.js）：条数在几十量级，
+        扫一遍全量 DOM 是毫秒级，不值得为它做索引或请求接口。 %>
+    <% if (page.showFilter) { %>
+    <div class="snippets-filter">
+      <span class="snippets-filter__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </span>
+      <input
+        type="search"
+        id="snippetsFilterInput"
+        class="snippets-filter__input"
+        placeholder="<%= tr('snippets.placeholder') %>"
+        aria-label="<%= tr('snippets.placeholder') %>"
+        autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="search"
+      >
+      <button type="button" class="snippets-filter__clear" id="snippetsFilterClear"
+              aria-label="<%= tr('snippets.clear') %>" hidden>✕</button>
+    </div>
+    <p class="snippets-status" id="snippetsStatus" role="status" aria-live="polite"></p>
+    <% } %>
+
+    <%# ===== 3. 分组 ===== %>
+    <% groups.forEach(function (group) { %>
+    <section class="snippets-group" data-category="<%= groupName(group.category) %>">
+      <h2 class="snippets-group__title">
+        <span class="snippets-group__name"><%= groupName(group.category) %></span>
+        <span class="snippets-group__count" aria-hidden="true"><%= group.items.length %></span>
+      </h2>
+
+      <% group.items.forEach(function (item) { %>
+      <%
+        /* 过滤用的检索文本：标题、说明、命令、标签全拼进来，并转小写。
+           前端只需要 indexOf，不必再遍历子节点取值——也让「搜什么能中」
+           这件事在服务端就已经定死，前端改不动口径。 */
+        var filterKey = [item.title, item.desc, item.command, item.category || '', (item.tags || []).join(' ')]
+          .join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+      %>
+      <article class="snippet-card"
+               id="<%= item.slug %>"
+               data-key="<%= filterKey %>">
+
+        <div class="snippet-card__head">
+          <h3 class="snippet-card__title"><%= item.title %></h3>
+          <% if (item.url) { %>
+            <%# 外链一律新窗口 + noopener noreferrer。 %>
+            <a class="snippet-card__link"
+               href="<%= item.url %>"
+               target="_blank"
+               rel="noopener noreferrer"
+               aria-label="<%= tr('snippets.open_source') %>">↗</a>
+          <% } %>
+        </div>
+
+        <% if (item.command) { %>
+        <div class="snippet-card__code">
+          <div class="snippet-card__code-head">
+            <span class="snippet-card__lang"><%= item.lang %></span>
+            <button type="button"
+                    class="snippet-card__copy"
+                    data-copy="<%= item.command %>"
+                    title="<%= tr('snippets.copy') %>">
+              <svg class="snippet-card__icon snippet-card__icon--copy" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="8.75" y="8.75" width="11.5" height="11.5" rx="2.6"/>
+                <path d="M15.25 5.9A2.9 2.9 0 0 0 12.4 3.75H6.65A2.9 2.9 0 0 0 3.75 6.65v5.75a2.9 2.9 0 0 0 2.15 2.85"/>
+              </svg>
+              <svg class="snippet-card__icon snippet-card__icon--check" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4.75 12.9 9.5 17.65 19.25 6.35"/>
+              </svg>
+              <span class="snippet-card__copy-text"><%= tr('snippets.copy') %></span>
+            </button>
+          </div>
+          <pre class="snippet-card__pre"><code><%= item.command %></code></pre>
+        </div>
+        <% } %>
+
+        <% if (item.desc) { %>
+          <p class="snippet-card__desc"><%= item.desc %></p>
+        <% } %>
+
+        <% if (item.tags && item.tags.length) { %>
+          <ul class="snippet-card__tags">
+            <% item.tags.forEach(function (tag) { %>
+              <li class="snippet-card__tag"><%= tag %></li>
+            <% }); %>
+          </ul>
+        <% } %>
+
+      </article>
+      <% }); %>
+    </section>
+    <% }); %>
+
+  <% } %>
+
+</div>
+
+<% if (page.showFilter) { %>
+<script src="<%= url_for('/js/snippets.js') %>" defer></script>
+<% } %>

@@ -12,6 +12,14 @@ a:hover{color:var(--c-link-hover)}
 img{max-width:100%;height:auto}
 html.dark img{filter:brightness(.9)}
 
+/* ===== [hidden] 必须真的隐身 =====
+   浏览器默认样式里 [hidden]{display:none} 的优先级极低（就是一条 UA 规则），
+   任何作者写的 `display:flex` 都能压过它。站内好几个元素依赖 hidden 属性
+   做开关，而它们又必须 flex 居中：搜索页的清除按钮、一行笔记页的清除按钮、
+   以及过滤时整组隐藏的卡片。少这一条，按钮会在输入框为空时也亮着，
+   点了还什么都不会发生。 */
+[hidden]{display:none !important}
+
 /* ===== Page Fade-In Animation ===== */
 /* 注意：仅使用 opacity，不可用 transform，避免破坏 position: fixed 子元素的包含块 */
 @keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
@@ -3805,6 +3813,407 @@ html.dark .search-result mark {
   }
   .search-result {
     padding: 14px 0;
+  }
+}
+
+/* ==========================================================================
+   一行笔记页（/snippets/）
+   --------------------------------------------------------------------------
+   与 /links/ 同源但取向不同：那一页的主体是可点的链接（卡片是「门」），
+   这一页的主体是可复制的命令（卡片是「便签」）。所以：
+     · 卡片纵向铺满整行而不是排成网格——一行命令被挤成两行就该换行了，
+       网格列宽会让它断在奇怪的位置；
+     · 命令区自带底色与等宽字体，是全页视觉重心；
+     · 标题退成偏弱的字号，压在命令上方当索引词。
+   全部读 token，没有新增色值；深浅两套模式自动跟随。
+   ========================================================================== */
+.snippets-page {
+  padding: 4px 0 60px;
+}
+
+/* ---- 页头 ---- */
+.snippets-head {
+  margin-bottom: 2.2em;
+}
+
+.snippets-head__kicker {
+  margin: 0 0 0.5em;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.snippets-head__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--c-text);
+}
+
+.snippets-head__intro {
+  margin: 0.7em 0 0;
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: var(--c-text-light);
+}
+
+/* ---- 过滤框 ----
+   整条做成带边框的胶囊，与 /search/ 的输入框完全同一套观感：站内所有
+   「输入关键词」的地方应当长一样，读者不需要重新学。 */
+.snippets-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  height: 46px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: var(--c-bg);
+  transition: border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.snippets-filter:focus-within {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+
+.snippets-filter__icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--c-text-faint);
+}
+
+.snippets-filter:focus-within .snippets-filter__icon {
+  color: var(--c-accent);
+}
+
+.snippets-filter__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--c-text);
+}
+
+.snippets-filter__input::placeholder {
+  color: var(--c-text-faint);
+}
+
+/* Chrome 给 type=search 塞了一个原生清除按钮，和自定义的那个重叠 */
+.snippets-filter__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.snippets-filter__clear {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--c-text-light);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+.snippets-filter__clear:hover {
+  background: var(--c-hover-bg);
+  color: var(--c-text);
+}
+
+/* ---- 状态行 ----
+   min-height 固定住，否则出现/消失时整个列表会往下跳一截。 */
+.snippets-status {
+  min-height: 1.4em;
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 分组 ----
+   分类名用 mono + 极淡下划线延伸，与 /links/ 的分组标题同一套语言：
+   读者靠分组建立地图，所以它要有结构感，但不能比卡片内容更响。 */
+.snippets-group {
+  margin-top: 2.4em;
+}
+
+.snippets-group:first-of-type {
+  margin-top: 1.8em;
+}
+
+.snippets-group__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 0.9em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--c-border);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--c-text-faint);
+}
+
+.snippets-group__name {
+  text-transform: uppercase;
+}
+
+.snippets-group__count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+/* ---- 单张卡片 ----
+   悬停只做描边变化，不做位移：这页的卡片不是「可点的门」，把它抬起
+   会诱导读者去点空白处。 */
+.snippet-card {
+  margin-bottom: 14px;
+  padding: 14px 16px 15px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-card-bg);
+  transition: border-color var(--dur-base) var(--ease-out);
+  /* 从搜索索引的 #slug 锚点跳进来时，目标卡片要一眼可见 */
+  scroll-margin-top: 90px;
+}
+
+.snippet-card:hover {
+  border-color: var(--c-border-strong);
+}
+
+/* 锚点命中时给一圈强调色：从 /search/ 点进来，落点是这一张而不是页顶 */
+.snippet-card:target {
+  border-color: var(--c-accent-line);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+
+.snippet-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.snippet-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--c-text);
+}
+
+.snippet-card__link {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: var(--c-text-faint);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.snippet-card__link:hover {
+  color: var(--c-accent);
+}
+
+/* ---- 命令区 ----
+   全页视觉重心。底色比页面略深一层，等宽字体，横向可滚（长命令宁可
+   让读者横滑一次，也不折行——折行的命令复制出去往往会多一个空格）。 */
+.snippet-card__code {
+  border: 1px solid var(--c-code-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--c-code-bg);
+}
+
+.snippet-card__code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px 6px 12px;
+  background: var(--c-code-head);
+  border-bottom: 1px solid var(--c-code-border);
+  min-height: 34px;
+}
+
+.snippet-card__lang {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--c-text-muted);
+}
+
+/* 复制按钮：默认只是一个弱化的图标 + 小字，悬停浮出一层底色，
+   点击后换成 accent 洗色 + 对勾。与正文代码块的 .code-copy-btn 同源，
+   但选择器独立（见 layout/snippets.ejs 顶部注释）。 */
+.snippet-card__copy {
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--c-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  padding: 3px 7px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.5;
+  transition: color var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out);
+}
+
+.snippet-card__copy:hover {
+  color: var(--c-text);
+  background: var(--c-code-chip-hover);
+}
+
+.snippet-card__copy:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+/* 文案宽度恒定（始终「复制」），状态只切图标与底色——
+   换成「已复制」会把按钮撑宽，这一行会抖。 */
+.snippet-card__icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+/* 两个图标叠在同一个格子里交叉淡入淡出，按钮宽度不变 */
+.snippet-card__icon--check {
+  position: absolute;
+  opacity: 0;
+}
+
+.snippet-card__copy {
+  position: relative;
+}
+
+.snippet-card__icon--copy {
+  opacity: 1;
+}
+
+.snippet-card__copy.copied {
+  color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+.snippet-card__copy.copied .snippet-card__icon--copy {
+  opacity: 0;
+}
+
+.snippet-card__copy.copied .snippet-card__icon--check {
+  opacity: 1;
+}
+
+.snippet-card__copy.failed {
+  color: var(--c-code-chip-error);
+}
+
+.snippet-card__pre {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.7;
+  color: var(--c-text);
+}
+
+.snippet-card__pre code {
+  font: inherit;
+  background: none;
+  padding: 0;
+  color: inherit;
+  white-space: pre;
+}
+
+/* ---- 说明与标签 ---- */
+.snippet-card__desc {
+  margin: 10px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.75;
+  color: var(--c-text-light);
+}
+
+.snippet-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.snippet-card__tag {
+  padding: 1px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--c-bg-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: var(--c-text-muted);
+}
+
+/* ---- 空状态 ---- */
+.snippets-empty {
+  margin: 56px 0;
+  text-align: center;
+}
+
+.snippets-empty__title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--c-text-light);
+}
+
+.snippets-empty__hint {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--c-text-faint);
+}
+
+@media (max-width: 600px) {
+  .snippets-head__title {
+    font-size: 1.25rem;
+  }
+  .snippet-card {
+    padding: 12px 13px 13px;
+  }
+  .snippet-card__pre {
+    font-size: 0.8rem;
   }
 }
 

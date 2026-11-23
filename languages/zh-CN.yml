@@ -152,6 +152,23 @@ links:
   empty_title: 这里还没有收藏任何站点
   empty_hint: 在 source/_data/bookmarks.yml 里加一条，或打开 bookmarks.remote 从 hub 拉取。
 
+# ---- 一行笔记（/snippets/） ----
+snippets:
+  title: 一行笔记
+  page_description: '一行就够的小抄：命令、地址、开关、技巧。共 %d 条、分 %d 类，每条都能一键复制，支持按关键词过滤，也参与全站搜索；记的都是下次一定会想不起来、但真到用时又必须准确的东西。'
+  intro: 记那些一行就够、但下次一定想不起来的东西。
+  stats: '%d 条 · %d 个分类'
+  uncategorized: 未分类
+  placeholder: 过滤标题、命令、标签…
+  clear: 清空过滤
+  copy: 复制
+  copied: 已复制
+  no_match: 没有匹配的记录
+  match_count: 匹配 %d 条
+  open_source: 打开来源
+  empty_title: 这里还没有记录
+  empty_hint: 在 source/_data/snippets.yml 里加一条，下次构建就会出现。
+
 # ---- 代码块 ----
 code:
   copy_code: 复制代码
